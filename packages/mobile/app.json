@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Comunica Fácil",
+    "slug": "comunica-facil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.comunicafacil.app"
+    },
+    "android": {
+      "package": "com.comunicafacil.app"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-status-bar"
+    ]
+  }
+}
