@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "lint": "eslint . --ext .ts,.tsx",
-    "test": "jest"
+    "start": "node_modules/.bin/expo start",
+    "android": "node_modules/.bin/expo start --android",
+    "ios": "node_modules/.bin/expo start --ios",
+    "web": "node_modules/.bin/expo start --web",
+    "lint": "node_modules/.bin/eslint . --ext .ts,.tsx",
+    "test": "node_modules/.bin/jest"
   },
   "dependencies": {
     "@react-navigation/native": "^6.1.17",
