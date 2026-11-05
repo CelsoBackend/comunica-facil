@@ -1,6 +1,6 @@
 import { getDatabase } from './database';
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 4;
 
 const MIGRATION_1 = `
 CREATE TABLE IF NOT EXISTS Usuario (
@@ -28,6 +28,27 @@ CREATE TABLE IF NOT EXISTS ConfiguracaoAcesso (
 );
 `;
 
+const MIGRATION_2 = `
+CREATE TABLE IF NOT EXISTS SessaoApp (
+  id TEXT PRIMARY KEY NOT NULL,
+  ativa INTEGER NOT NULL DEFAULT 0,
+  usuario_nome TEXT,
+  criado_em TEXT NOT NULL,
+  atualizado_em TEXT NOT NULL
+);
+`;
+
+const MIGRATION_3 = `
+ALTER TABLE Usuario ADD COLUMN email TEXT;
+UPDATE Usuario
+   SET email = nome
+ WHERE email IS NULL;
+`;
+
+const MIGRATION_4 = `
+ALTER TABLE Usuario ADD COLUMN paciente_id TEXT;
+`;
+
 export const runMigrations = async (): Promise<void> => {
   const database = await getDatabase();
   const versionRow = await database.getFirstAsync<{ user_version: number }>('PRAGMA user_version;');
@@ -36,6 +57,27 @@ export const runMigrations = async (): Promise<void> => {
   if (currentVersion < 1) {
     await database.withTransactionAsync(async () => {
       await database.execAsync(MIGRATION_1);
+      await database.execAsync('PRAGMA user_version = 1;');
+    });
+  }
+
+  if (currentVersion < 2) {
+    await database.withTransactionAsync(async () => {
+      await database.execAsync(MIGRATION_2);
+      await database.execAsync('PRAGMA user_version = 2;');
+    });
+  }
+
+  if (currentVersion < 3) {
+    await database.withTransactionAsync(async () => {
+      await database.execAsync(MIGRATION_3);
+      await database.execAsync('PRAGMA user_version = 3;');
+    });
+  }
+
+  if (currentVersion < 4) {
+    await database.withTransactionAsync(async () => {
+      await database.execAsync(MIGRATION_4);
       await database.execAsync(`PRAGMA user_version = ${DATABASE_VERSION};`);
     });
   }

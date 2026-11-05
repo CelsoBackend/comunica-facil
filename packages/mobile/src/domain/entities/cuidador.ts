@@ -9,22 +9,6 @@ export class Cuidador extends Usuario {
     super(id, nome, senhaHash, 'cuidador');
   }
 
-  entrarModoEdicao(senhaHashInformada: string): boolean {
-    this.modoEdicaoAtivo = this.autenticar(senhaHashInformada);
-    return this.modoEdicaoAtivo;
-  }
-
-  sairModoEdicao(): void {
-    this.modoEdicaoAtivo = false;
-  }
-
-  criarBotao(paciente: Paciente, texto: string, cor: string): Botao {
-    this.validarModoEdicao();
-    const novoBotao = new Botao(Date.now().toString(), texto, cor);
-    paciente.obterBotoes().push(novoBotao);
-    return novoBotao;
-  }
-
   alterarMensagemBotao(botao: Botao, novoTexto: string): void {
     this.validarModoEdicao();
     botao.texto = novoTexto;
@@ -35,10 +19,26 @@ export class Cuidador extends Usuario {
     botao.cor = novaCor;
   }
 
+  criarBotao(paciente: Paciente, texto: string, cor: string): Botao {
+    this.validarModoEdicao();
+    const novoBotao = new Botao(Date.now().toString(), texto, cor);
+    paciente.obterBotoes().push(novoBotao);
+    return novoBotao;
+  }
+
   excluirBotao(paciente: Paciente, botaoId: string): void {
     this.validarModoEdicao();
     const botoesAtualizados = paciente.obterBotoes().filter((botao) => botao.id !== botaoId);
     paciente.obterBotoes().splice(0, paciente.obterBotoes().length, ...botoesAtualizados);
+  }
+
+  entrarModoEdicao(senhaHashInformada: string): boolean {
+    this.modoEdicaoAtivo = this.autenticar(senhaHashInformada);
+    return this.modoEdicaoAtivo;
+  }
+
+  sairModoEdicao(): void {
+    this.modoEdicaoAtivo = false;
   }
 
   private validarModoEdicao(): void {

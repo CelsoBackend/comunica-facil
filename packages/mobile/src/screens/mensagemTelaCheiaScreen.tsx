@@ -31,7 +31,7 @@ const getCorTextoPorContraste = (hexColor: string): string => {
   return luminancia > 0.6 ? '#111827' : '#ffffff';
 };
 
-export default function MensagemTelaCheiaScreen({ navigation, route }: Props) {
+export default function mensagemTelaCheiaScreen({ navigation, route }: Props) {
   const { atencao, texto, cor } = route.params;
   const corTexto = getCorTextoPorContraste(cor);
 

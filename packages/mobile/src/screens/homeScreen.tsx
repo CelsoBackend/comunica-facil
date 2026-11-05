@@ -9,26 +9,30 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../App';
 
 import {
   BotaoRecord,
   BotaoRepository,
   ConfiguracaoAcessoRepository,
+  SessaoRepository,
   UsuarioRepository,
 } from '@/data/repositories';
 import { runMigrations } from '@/data/storage';
 import { Botao } from '@/domain/entities';
+import { isEmailValido } from '@/domain/security/email';
 import { hashSenha } from '@/domain/security/hash';
-import { RootStackParamList } from '../../../App';
 
 type ModoTela = 'loading' | 'cadastroPaciente' | 'home';
 
 const usuarioRepository = new UsuarioRepository();
 const botaoRepository = new BotaoRepository();
 const configuracaoAcessoRepository = new ConfiguracaoAcessoRepository();
+const sessaoRepository = new SessaoRepository();
 const CONFIGURACAO_ACESSO_ID = 'principal';
+const SESSAO_ID = 'principal';
 const SENHA_MINIMA_CARACTERES = 6;
 const COR_PADRAO = '#86EFAC';
 
@@ -94,7 +98,7 @@ const getMensagemErro = (erro: unknown): string => {
   return 'Tente novamente em instantes.';
 };
 
-export default function HomeScreen() {
+export default function homeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [modoTela, setModoTela] = useState<ModoTela>('loading');
   const [loading, setLoading] = useState(true);
@@ -102,12 +106,12 @@ export default function HomeScreen() {
   const [pacienteNome, setPacienteNome] = useState('');
   const [pacienteSenha, setPacienteSenha] = useState('');
   const [cuidadorNome, setCuidadorNome] = useState('');
+  const [cuidadorEmail, setCuidadorEmail] = useState('');
   const [cuidadorSenha, setCuidadorSenha] = useState('');
   const [pacienteAtualNome, setPacienteAtualNome] = useState('');
+  const [pacienteAtualId, setPacienteAtualId] = useState<string | null>(null);
   const [hasCuidador, setHasCuidador] = useState(false);
   const [mostrarCadastroCuidador, setMostrarCadastroCuidador] = useState(false);
-  const [mostrarLoginEdicao, setMostrarLoginEdicao] = useState(false);
-  const [senhaModoEdicao, setSenhaModoEdicao] = useState('');
   const [modoEdicaoAtivo, setModoEdicaoAtivo] = useState(false);
   const [botoes, setBotoes] = useState<BotaoRecord[]>([]);
   const [novoBotaoTexto, setNovoBotaoTexto] = useState('');
@@ -119,10 +123,8 @@ export default function HomeScreen() {
   const voltarParaHomeSegura = useCallback(() => {
     setModoTela('home');
     setMostrarCadastroCuidador(false);
-    setMostrarLoginEdicao(false);
     setModoEdicaoAtivo(false);
     setBotaoEmEdicaoId(null);
-    setSenhaModoEdicao('');
   }, []);
 
   const carregarBotoesAtivos = useCallback(async () => {
@@ -158,26 +160,46 @@ export default function HomeScreen() {
     try {
       await runMigrations();
       const paciente = await usuarioRepository.findByTipo('paciente');
-      const totalCuidadores = await usuarioRepository.countByTipo('cuidador');
+      const cuidador = paciente
+        ? await usuarioRepository.findByTipoAndPacienteId('cuidador', paciente.id)
+        : null;
       const configuracaoAcesso = await configuracaoAcessoRepository.findById(CONFIGURACAO_ACESSO_ID);
 
-      if (!paciente) {
-        setModoTela('cadastroPaciente');
-      } else {
-        setPacienteAtualNome(paciente.nome);
-        setHasCuidador(totalCuidadores > 0);
-        setModoEdicaoAtivo(configuracaoAcesso?.modoEdicaoAtivo ?? false);
-        await carregarBotoesAtivos();
-        setModoTela('home');
-      }
+      await garantirBotoesPadrao();
+
+      setPacienteAtualId(paciente?.id ?? null);
+      setPacienteAtualNome(paciente?.nome ?? '');
+      setHasCuidador(Boolean(cuidador));
+      setModoEdicaoAtivo(configuracaoAcesso?.modoEdicaoAtivo ?? false);
+      await carregarBotoesAtivos();
+      setModoTela('home');
     } finally {
       setLoading(false);
     }
-  }, [carregarBotoesAtivos]);
+  }, [carregarBotoesAtivos, garantirBotoesPadrao]);
 
   useEffect(() => {
     carregarEstadoInicial();
   }, [carregarEstadoInicial]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const validarSessao = async () => {
+        try {
+          const sessao = await sessaoRepository.findById(SESSAO_ID);
+
+          if (!sessao?.ativa) {
+            navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+          }
+        } catch (erro) {
+          console.error(erro);
+          navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+        }
+      };
+
+      validarSessao();
+    }, [navigation]),
+  );
 
   const salvarPaciente = useCallback(async () => {
     const nome = pacienteNome.trim();
@@ -208,7 +230,6 @@ export default function HomeScreen() {
       setPacienteNome('');
       setPacienteSenha('');
       await carregarEstadoInicial();
-      setMostrarCadastroCuidador(true);
     } catch (erro) {
       console.error(erro);
       Alert.alert('Falha ao criar paciente', getMensagemErro(erro));
@@ -219,6 +240,11 @@ export default function HomeScreen() {
   }, [carregarEstadoInicial, garantirBotoesPadrao, pacienteNome, pacienteSenha, voltarParaHomeSegura]);
 
   const salvarCuidador = useCallback(async () => {
+    if (!pacienteAtualId) {
+      Alert.alert('Atenção', 'Paciente não identificado para vincular cuidador.');
+      return;
+    }
+
     if (hasCuidador) {
       Alert.alert('Limite atingido', 'No MVP, é permitido cadastrar apenas 1 cuidador.');
       setMostrarCadastroCuidador(false);
@@ -226,10 +252,22 @@ export default function HomeScreen() {
     }
 
     const nome = cuidadorNome.trim();
+    const email = cuidadorEmail.trim();
     const senha = cuidadorSenha.trim();
 
-    if (!nome || !senha) {
-      Alert.alert('Atenção', 'Preencha nome e senha para criar o cuidador.');
+    if (!nome || !email || !senha) {
+      Alert.alert('Atenção', 'Preencha nome, email e senha para criar o cuidador.');
+      return;
+    }
+
+    if (!isEmailValido(email)) {
+      Alert.alert('Email inválido', 'Informe um email válido para o cuidador.');
+      return;
+    }
+
+    const usuarioExistente = await usuarioRepository.findByEmail(email);
+    if (usuarioExistente) {
+      Alert.alert('Conta existente', 'Já existe uma conta cadastrada com este email.');
       return;
     }
 
@@ -244,11 +282,14 @@ export default function HomeScreen() {
       await usuarioRepository.create({
         id: criarId(),
         nome,
+        email,
+        pacienteId: pacienteAtualId,
         senhaHash: hashSenha(senha),
         tipo: 'cuidador',
         criadoEm: new Date().toISOString(),
       });
       setCuidadorNome('');
+      setCuidadorEmail('');
       setCuidadorSenha('');
       setMostrarCadastroCuidador(false);
       await carregarEstadoInicial();
@@ -259,51 +300,7 @@ export default function HomeScreen() {
     } finally {
       setSaving(false);
     }
-  }, [carregarEstadoInicial, cuidadorNome, cuidadorSenha, hasCuidador, voltarParaHomeSegura]);
-
-  const entrarModoEdicao = useCallback(async () => {
-    const senha = senhaModoEdicao.trim();
-
-    if (!senha) {
-      Alert.alert('Atenção', 'Informe a senha do cuidador para entrar no modo edição.');
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const cuidador = await usuarioRepository.findByTipo('cuidador');
-
-      if (!cuidador) {
-        Alert.alert('Atenção', 'Nenhum cuidador cadastrado para autenticar.');
-        return;
-      }
-
-      const senhaValida = hashSenha(senha) === cuidador.senhaHash;
-
-      if (!senhaValida) {
-        Alert.alert('Acesso negado', 'Senha inválida. O modo edição continua bloqueado.');
-        return;
-      }
-
-      await configuracaoAcessoRepository.save({
-        id: CONFIGURACAO_ACESSO_ID,
-        modoEdicaoAtivo: true,
-        ultimoAcessoCuidadorEm: new Date().toISOString(),
-      });
-
-      setModoEdicaoAtivo(true);
-      setMostrarLoginEdicao(false);
-      setSenhaModoEdicao('');
-      Alert.alert('Modo edição ativo', 'Acesso do cuidador liberado para gestão.');
-    } catch (erro) {
-      console.error(erro);
-      Alert.alert('Falha ao validar acesso', getMensagemErro(erro));
-      voltarParaHomeSegura();
-    } finally {
-      setSaving(false);
-    }
-  }, [senhaModoEdicao, voltarParaHomeSegura]);
+  }, [carregarEstadoInicial, cuidadorEmail, cuidadorNome, cuidadorSenha, hasCuidador, pacienteAtualId, voltarParaHomeSegura]);
 
   const sairModoEdicao = useCallback(async () => {
     setSaving(true);
@@ -317,14 +314,11 @@ export default function HomeScreen() {
       });
 
       setModoEdicaoAtivo(false);
-      setMostrarLoginEdicao(false);
-      setSenhaModoEdicao('');
       setBotaoEmEdicaoId(null);
       setModoTela('home');
-      Alert.alert('Modo paciente ativo', 'Você saiu do modo edição.');
     } catch (erro) {
       console.error(erro);
-      Alert.alert('Falha ao sair do modo edição', getMensagemErro(erro));
+      Alert.alert('Falha ao encerrar sessão', getMensagemErro(erro));
       voltarParaHomeSegura();
     } finally {
       setSaving(false);
@@ -558,6 +552,12 @@ export default function HomeScreen() {
 
   const renderHome = () => (
     <View style={styles.card}>
+      {modoEdicaoAtivo ? (
+        <Pressable style={styles.closeEditButton} onPress={sairModoEdicao} disabled={saving}>
+          <Text style={styles.closeEditButtonText}>✕</Text>
+        </Pressable>
+      ) : null}
+
       <Text style={styles.subtitle}>Olá, {pacienteAtualNome}</Text>
       <Text style={styles.status}>{modoEdicaoAtivo ? 'Modo edição ativo' : 'Modo paciente ativo'}</Text>
 
@@ -593,41 +593,11 @@ export default function HomeScreen() {
           <Text style={styles.info}>Cuidador já cadastrado no aparelho.</Text>
 
           {!modoEdicaoAtivo ? (
-            <>
-              {!mostrarLoginEdicao ? (
-                <Pressable style={styles.buttonSecondary} onPress={() => setMostrarLoginEdicao(true)}>
-                  <Text style={styles.buttonSecondaryText}>Entrar em modo edição</Text>
-                </Pressable>
-              ) : (
-                <View style={styles.formSection}>
-                  <Text style={styles.formTitle}>Autenticação do cuidador</Text>
-                  <TextInput
-                    placeholder="Senha do cuidador"
-                    secureTextEntry
-                    value={senhaModoEdicao}
-                    onChangeText={setSenhaModoEdicao}
-                    style={styles.input}
-                  />
-                  <Pressable style={styles.button} onPress={entrarModoEdicao} disabled={saving}>
-                    <Text style={styles.buttonText}>{saving ? 'Validando...' : 'Validar e entrar'}</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.linkButton}
-                    onPress={() => {
-                      setMostrarLoginEdicao(false);
-                      setSenhaModoEdicao('');
-                    }}
-                  >
-                    <Text style={styles.linkText}>Cancelar</Text>
-                  </Pressable>
-                </View>
-              )}
-            </>
+            <Pressable style={styles.buttonSecondary} onPress={() => navigation.navigate('LoginCuidadorEdicao')}>
+              <Text style={styles.buttonSecondaryText}>Entrar em modo edição</Text>
+            </Pressable>
           ) : (
             <View style={styles.formSection}>
-              <Pressable style={styles.closeEditButton} onPress={sairModoEdicao} disabled={saving}>
-                <Text style={styles.closeEditButtonText}>✕</Text>
-              </Pressable>
               <Text style={styles.formTitle}>Painel do cuidador</Text>
               <Text style={styles.emptyState}>Gerencie os botões do paciente: criar, editar, excluir e reordenar.</Text>
 
@@ -729,7 +699,7 @@ export default function HomeScreen() {
         <>
           {!mostrarCadastroCuidador ? (
             <Pressable style={styles.buttonSecondary} onPress={() => setMostrarCadastroCuidador(true)}>
-              <Text style={styles.buttonSecondaryText}>Adicionar cuidador</Text>
+              <Text style={styles.buttonSecondaryText}>Criar conta cuidador</Text>
             </Pressable>
           ) : (
             <View style={styles.formSection}>
@@ -739,6 +709,13 @@ export default function HomeScreen() {
                 value={cuidadorNome}
                 onChangeText={setCuidadorNome}
                 style={styles.input}
+              />
+              <TextInput
+                placeholder="Email do cuidador"
+                value={cuidadorEmail}
+                onChangeText={setCuidadorEmail}
+                style={styles.input}
+                autoCapitalize="none"
               />
               <TextInput
                 placeholder="Senha"

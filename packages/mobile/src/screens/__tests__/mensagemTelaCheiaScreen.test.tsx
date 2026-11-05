@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import MensagemTelaCheiaScreen from '../mensagemTelaCheiaScreen';
+import mensagemTelaCheiaScreen from '../mensagemTelaCheiaScreen';
 
 const mockSpeak = jest.fn();
 const mockStop = jest.fn();
@@ -27,7 +27,7 @@ describe('Fluxo assistivo - MensagemTelaCheia', () => {
     const goBack = jest.fn();
 
     const screen = render(
-      <MensagemTelaCheiaScreen
+      <mensagemTelaCheiaScreen
         navigation={{ goBack } as any}
         route={{ key: 'MensagemTelaCheia-1', name: 'MensagemTelaCheia', params: { texto: 'SIM', cor: '#22c55e' } } as any}
       />,
@@ -50,7 +50,7 @@ describe('Fluxo assistivo - MensagemTelaCheia', () => {
     });
 
     render(
-      <MensagemTelaCheiaScreen
+      <mensagemTelaCheiaScreen
         navigation={{ goBack: jest.fn() } as any}
         route={{ key: 'MensagemTelaCheia-1', name: 'MensagemTelaCheia', params: { texto: 'NÃO', cor: '#ef4444' } } as any}
       />,

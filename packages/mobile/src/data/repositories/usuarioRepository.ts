@@ -5,6 +5,8 @@ import { getDatabase } from '../storage';
 export type UsuarioRecord = {
   id: string;
   nome: string;
+  email?: string | null;
+  pacienteId?: string | null;
   senhaHash: string;
   tipo: TipoUsuario;
   criadoEm: string;
@@ -13,6 +15,8 @@ export type UsuarioRecord = {
 type UsuarioRow = {
   id: string;
   nome: string;
+  email?: string | null;
+  paciente_id?: string | null;
   senha_hash: string;
   tipo: TipoUsuario;
   criado_em: string;
@@ -21,6 +25,8 @@ type UsuarioRow = {
 const mapUsuarioRow = (row: UsuarioRow): UsuarioRecord => ({
   id: row.id,
   nome: row.nome,
+  email: row.email ?? null,
+  pacienteId: row.paciente_id ?? null,
   senhaHash: row.senha_hash,
   tipo: row.tipo,
   criadoEm: row.criado_em,
@@ -30,10 +36,12 @@ export class UsuarioRepository {
   async create(usuario: UsuarioRecord): Promise<void> {
     const database = await getDatabase();
     await database.runAsync(
-      `INSERT INTO Usuario (id, nome, senha_hash, tipo, criado_em)
-       VALUES (?, ?, ?, ?, ?);`,
+      `INSERT INTO Usuario (id, nome, email, paciente_id, senha_hash, tipo, criado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?);`,
       usuario.id,
       usuario.nome,
+      usuario.email ?? null,
+      usuario.pacienteId ?? null,
       usuario.senhaHash,
       usuario.tipo,
       usuario.criadoEm,
@@ -61,6 +69,32 @@ export class UsuarioRepository {
     return row ? mapUsuarioRow(row) : null;
   }
 
+  async findByTipoAndPacienteId(tipo: TipoUsuario, pacienteId: string): Promise<UsuarioRecord | null> {
+    const database = await getDatabase();
+    const row = await database.getFirstAsync<UsuarioRow>(
+      'SELECT * FROM Usuario WHERE tipo = ? AND paciente_id = ? ORDER BY criado_em ASC LIMIT 1;',
+      tipo,
+      pacienteId,
+    );
+    return row ? mapUsuarioRow(row) : null;
+  }
+
+  async findByNome(nome: string): Promise<UsuarioRecord | null> {
+    const database = await getDatabase();
+    const row = await database.getFirstAsync<UsuarioRow>('SELECT * FROM Usuario WHERE nome = ? LIMIT 1;', nome);
+    return row ? mapUsuarioRow(row) : null;
+  }
+
+  async findByEmail(email: string): Promise<UsuarioRecord | null> {
+    const database = await getDatabase();
+    const row = await database.getFirstAsync<UsuarioRow>(
+      'SELECT * FROM Usuario WHERE email = ? OR nome = ? LIMIT 1;',
+      email,
+      email,
+    );
+    return row ? mapUsuarioRow(row) : null;
+  }
+
   async countByTipo(tipo: TipoUsuario): Promise<number> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<{ total: number }>(
@@ -74,9 +108,11 @@ export class UsuarioRepository {
     const database = await getDatabase();
     await database.runAsync(
       `UPDATE Usuario
-         SET nome = ?, senha_hash = ?, tipo = ?
+         SET nome = ?, email = ?, paciente_id = ?, senha_hash = ?, tipo = ?
        WHERE id = ?;`,
       usuario.nome,
+      usuario.email ?? null,
+      usuario.pacienteId ?? null,
       usuario.senhaHash,
       usuario.tipo,
       usuario.id,
