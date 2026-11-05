@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 8,
-    backgroundColor: '#0b3a8f',
+    backgroundColor: '#26B1A5',
     borderRadius: 8,
     minHeight: 48,
     justifyContent: 'center',
@@ -159,14 +159,14 @@ const styles = StyleSheet.create({
   },
   buttonSecondary: {
     borderWidth: 1,
-    borderColor: '#0b3a8f',
+    borderColor: '#26B1A5',
     borderRadius: 8,
     minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonSecondaryText: {
-    color: '#0b3a8f',
+    color: '#26B1A5',
     fontWeight: '600',
     fontSize: 16,
   },
