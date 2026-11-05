@@ -17,10 +17,6 @@ comunica-facil/
 - Yarn 1.x
 - Expo CLI (`npm install -g expo-cli`)
 
-## Getting Started
-
-## Instalar dependencias
-
 ## Instalar o yarn 
 
 ## Windows
