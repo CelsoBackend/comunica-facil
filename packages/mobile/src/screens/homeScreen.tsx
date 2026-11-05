@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#0b3a8f',
+    color: '#26B1A5',
   },
   status: {
     fontSize: 17,
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   button: {
-    backgroundColor: '#0b3a8f',
+    backgroundColor: '#26B1A5',
     borderRadius: 8,
     minHeight: 48,
     paddingVertical: 12,
@@ -804,7 +804,7 @@ const styles = StyleSheet.create({
   },
   buttonSecondary: {
     borderWidth: 1,
-    borderColor: '#0b3a8f',
+    borderColor: '#26B1A5',
     borderRadius: 8,
     minHeight: 48,
     paddingVertical: 12,
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   buttonSecondaryText: {
-    color: '#0b3a8f',
+    color: '#26B1A5',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   colorItemSelected: {
-    borderColor: '#0b3a8f',
+    borderColor: '#26B1A5',
     borderWidth: 2,
   },
   colorSwatch: {
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   buttonSmall: {
-    backgroundColor: '#0b3a8f',
+    backgroundColor: '#26B1A5',
     borderRadius: 8,
     minHeight: 44,
     paddingVertical: 8,
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
   },
   buttonSmallSecondary: {
     borderWidth: 1,
-    borderColor: '#0b3a8f',
+    borderColor: '#26B1A5',
     borderRadius: 8,
     minHeight: 44,
     paddingVertical: 8,

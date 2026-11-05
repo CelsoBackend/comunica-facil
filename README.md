@@ -81,3 +81,33 @@ Obs: o Celular precisa estar na mesma rede Wifi do computador.
 |---|---|
 | `yarn start` | Start Expo dev server |
 | `yarn test` | Run tests in all packages |
+
+## Publicação na Google Play (Android)
+
+### Assets já preparados no repositório
+
+- Ícone da loja (`512x512`): `packages/mobile/assets/play-store/icon-512.png`
+- Feature graphic (`1024x500`): `packages/mobile/assets/play-store/feature-graphic-1024x500.png`
+- Ícone do app: `packages/mobile/assets/icon.png`
+- Adaptive icon:
+  - foreground: `packages/mobile/assets/adaptive-icon-foreground.png`
+  - background: `packages/mobile/assets/adaptive-icon-background.png`
+
+### Gerar AAB de produção (EAS)
+
+No diretório `packages/mobile`:
+
+```bash
+npx eas build --platform android --profile production
+```
+
+Após gerar o build:
+
+1. Instalar o artefato em dispositivo/emulador Android.
+2. Validar fluxo básico do app (abrir, navegar e acionar um botão de comunicação).
+
+### Materiais de suporte para Play Console
+
+- Política de privacidade: `docs/google-play/POLITICA_DE_PRIVACIDADE.md`
+- Data safety: `docs/google-play/PLAY_CONSOLE_DATA_SAFETY.md`
+- Store listing base: `docs/google-play/STORE_LISTING_BASE.md`
