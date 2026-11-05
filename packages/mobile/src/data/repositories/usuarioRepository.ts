@@ -1,8 +1,8 @@
-import { TipoUsuario } from '@/domain/entities';
+import { TipoUsuario } from '@/domain/models';
 
 import { getDatabase } from '../storage';
 
-export type UsuarioRecord = {
+export type UsuarioEntity = {
   id: string;
   nome: string;
   email?: string | null;
@@ -22,7 +22,7 @@ type UsuarioRow = {
   criado_em: string;
 };
 
-const mapUsuarioRow = (row: UsuarioRow): UsuarioRecord => ({
+const mapUsuarioRow = (row: UsuarioRow): UsuarioEntity => ({
   id: row.id,
   nome: row.nome,
   email: row.email ?? null,
@@ -33,7 +33,7 @@ const mapUsuarioRow = (row: UsuarioRow): UsuarioRecord => ({
 });
 
 export class UsuarioRepository {
-  async create(usuario: UsuarioRecord): Promise<void> {
+  async create(usuario: UsuarioEntity): Promise<void> {
     const database = await getDatabase();
     await database.runAsync(
       `INSERT INTO Usuario (id, nome, email, paciente_id, senha_hash, tipo, criado_em)
@@ -48,19 +48,19 @@ export class UsuarioRepository {
     );
   }
 
-  async findById(id: string): Promise<UsuarioRecord | null> {
+  async findById(id: string): Promise<UsuarioEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<UsuarioRow>('SELECT * FROM Usuario WHERE id = ?;', id);
     return row ? mapUsuarioRow(row) : null;
   }
 
-  async findAll(): Promise<UsuarioRecord[]> {
+  async findAll(): Promise<UsuarioEntity[]> {
     const database = await getDatabase();
     const rows = await database.getAllAsync<UsuarioRow>('SELECT * FROM Usuario ORDER BY criado_em ASC;');
     return rows.map(mapUsuarioRow);
   }
 
-  async findByTipo(tipo: TipoUsuario): Promise<UsuarioRecord | null> {
+  async findByTipo(tipo: TipoUsuario): Promise<UsuarioEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<UsuarioRow>(
       'SELECT * FROM Usuario WHERE tipo = ? ORDER BY criado_em ASC LIMIT 1;',
@@ -69,7 +69,7 @@ export class UsuarioRepository {
     return row ? mapUsuarioRow(row) : null;
   }
 
-  async findByTipoAndPacienteId(tipo: TipoUsuario, pacienteId: string): Promise<UsuarioRecord | null> {
+  async findByTipoAndPacienteId(tipo: TipoUsuario, pacienteId: string): Promise<UsuarioEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<UsuarioRow>(
       'SELECT * FROM Usuario WHERE tipo = ? AND paciente_id = ? ORDER BY criado_em ASC LIMIT 1;',
@@ -79,13 +79,13 @@ export class UsuarioRepository {
     return row ? mapUsuarioRow(row) : null;
   }
 
-  async findByNome(nome: string): Promise<UsuarioRecord | null> {
+  async findByNome(nome: string): Promise<UsuarioEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<UsuarioRow>('SELECT * FROM Usuario WHERE nome = ? LIMIT 1;', nome);
     return row ? mapUsuarioRow(row) : null;
   }
 
-  async findByEmail(email: string): Promise<UsuarioRecord | null> {
+  async findByEmail(email: string): Promise<UsuarioEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<UsuarioRow>(
       'SELECT * FROM Usuario WHERE email = ? OR nome = ? LIMIT 1;',
@@ -104,7 +104,7 @@ export class UsuarioRepository {
     return row?.total ?? 0;
   }
 
-  async update(usuario: UsuarioRecord): Promise<void> {
+  async update(usuario: UsuarioEntity): Promise<void> {
     const database = await getDatabase();
     await database.runAsync(
       `UPDATE Usuario

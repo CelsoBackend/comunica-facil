@@ -8,11 +8,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.comunicafacil.app"
+      "bundleIdentifier": "com.ocarlosfreitas.comunicafacil"
     },
     "android": {
-      "package": "com.comunicafacil.app",
-      "versionCode": 2,
+      "package": "com.ocarlosfreitas.comunicafacil",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-foreground.png",
         "backgroundImage": "./assets/adaptive-icon-background.png"

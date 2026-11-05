@@ -1,6 +1,6 @@
 import { getDatabase } from '../storage';
 
-export type BotaoRecord = {
+export type BotaoEntity = {
   id: string;
   texto: string;
   cor: string;
@@ -20,7 +20,7 @@ type BotaoRow = {
   atualizado_em: string;
 };
 
-const mapBotaoRow = (row: BotaoRow): BotaoRecord => ({
+const mapBotaoRow = (row: BotaoRow): BotaoEntity => ({
   id: row.id,
   texto: row.texto,
   cor: row.cor,
@@ -31,7 +31,7 @@ const mapBotaoRow = (row: BotaoRow): BotaoRecord => ({
 });
 
 export class BotaoRepository {
-  async create(botao: BotaoRecord): Promise<void> {
+  async create(botao: BotaoEntity): Promise<void> {
     const database = await getDatabase();
     await database.runAsync(
       `INSERT INTO Botao (id, texto, cor, ordem, ativo, criado_em, atualizado_em)
@@ -46,13 +46,13 @@ export class BotaoRepository {
     );
   }
 
-  async findById(id: string): Promise<BotaoRecord | null> {
+  async findById(id: string): Promise<BotaoEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<BotaoRow>('SELECT * FROM Botao WHERE id = ?;', id);
     return row ? mapBotaoRow(row) : null;
   }
 
-  async findAll(activeOnly = false): Promise<BotaoRecord[]> {
+  async findAll(activeOnly = false): Promise<BotaoEntity[]> {
     const database = await getDatabase();
     const query = activeOnly
       ? 'SELECT * FROM Botao WHERE ativo = 1 ORDER BY ordem ASC, criado_em ASC;'
@@ -61,7 +61,7 @@ export class BotaoRepository {
     return rows.map(mapBotaoRow);
   }
 
-  async update(botao: BotaoRecord): Promise<void> {
+  async update(botao: BotaoEntity): Promise<void> {
     const database = await getDatabase();
     await database.runAsync(
       `UPDATE Botao
