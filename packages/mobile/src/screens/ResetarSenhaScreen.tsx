@@ -1,67 +1,37 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../App';
-import { UsuarioRepository } from '@/data/repositories';
-import { runMigrations } from '@/data/storage';
-import { isEmailValido } from '@/domain/security/email';
-import { hashSenha } from '@/domain/security/hash';
-
-const usuarioRepository = new UsuarioRepository();
-
-const SENHA_MINIMA_CARACTERES = 6;
-
-const getMensagemErro = (erro: unknown): string => {
-  if (erro instanceof Error && erro.message.trim().length > 0) {
-    return erro.message;
-  }
-
-  return 'Tente novamente em instantes.';
-};
+import { getMensagemErro, resetarSenha, validaResetarSenha } from '@/domain/services';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ResetarSenha'>;
 
-export default function resetarSenhaScreen({ navigation }: Props) {
+export default function ResetarSenhaScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const resetarSenha = useCallback(async () => {
+  const handleResetarSenha = useCallback(async () => {
     const emailNormalizado = email.trim();
     const senhaNormalizada = novaSenha.trim();
 
-    if (!emailNormalizado || !senhaNormalizada) {
-      Alert.alert('Atenção', 'Informe email e nova senha.');
-      return;
-    }
-
-    if (!isEmailValido(emailNormalizado)) {
-      Alert.alert('Email inválido', 'Informe um email válido.');
-      return;
-    }
-
-    if (senhaNormalizada.length < SENHA_MINIMA_CARACTERES) {
-      Alert.alert('Senha inválida', `A senha deve ter pelo menos ${SENHA_MINIMA_CARACTERES} caracteres.`);
+    const validacao = validaResetarSenha(emailNormalizado, senhaNormalizada);
+    if (!validacao.valido) {
+      Alert.alert(validacao.titulo, validacao.mensagem);
       return;
     }
 
     setLoading(true);
 
     try {
-      await runMigrations();
-      const usuario = await usuarioRepository.findByEmail(emailNormalizado);
+      const resultado = await resetarSenha(emailNormalizado, senhaNormalizada);
 
-      if (!usuario) {
-        Alert.alert('Atenção', 'não foi possivel resetar a senha email invalido');
+      if (!resultado.sucesso) {
+        Alert.alert(resultado.titulo, resultado.mensagem);
         navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
         return;
       }
-
-      await usuarioRepository.update({
-        ...usuario,
-        senhaHash: hashSenha(senhaNormalizada),
-      });
 
       Alert.alert('Senha atualizada', 'Senha resetada com sucesso.');
       navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
@@ -76,6 +46,7 @@ export default function resetarSenhaScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
+        <Image source={require('../../assets/icon.png')} style={styles.icon} resizeMode="contain" />
         <Text style={styles.title}>resetar senha</Text>
 
         <TextInput placeholder="email" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" />
@@ -88,7 +59,7 @@ export default function resetarSenhaScreen({ navigation }: Props) {
           autoCapitalize="none"
         />
 
-        <Pressable style={styles.button} onPress={resetarSenha} disabled={loading}>
+        <Pressable style={styles.button} onPress={handleResetarSenha} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Carregando...' : 'Resetar senha'}</Text>
         </Pressable>
       </View>
@@ -113,12 +84,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
     gap: 10,
+    alignItems: 'center',
+  },
+  icon: {
+    width: 80,
+    height: 80,
+    marginBottom: 4,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
+    alignSelf: 'flex-start',
   },
   input: {
     borderWidth: 1,
@@ -127,6 +105,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: '#ffffff',
+    width: '100%',
   },
   button: {
     marginTop: 8,
@@ -135,6 +114,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#ffffff',

@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import resetarSenhaScreen from '../resetarSenhaScreen';
+import ResetarSenhaScreen from '../ResetarSenhaScreen';
 
 const mockFindByEmail = jest.fn();
 const mockUpdate = jest.fn();

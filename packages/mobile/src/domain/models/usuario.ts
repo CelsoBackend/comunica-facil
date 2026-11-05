@@ -6,7 +6,7 @@ export class Usuario {
     public nome: string,
     public email: string,
     public senhaHash: string,
-    public tipo: TipoUsuario,
+    //public tipo: TipoUsuario,
   ) {}
 
   criarConta(): Usuario {

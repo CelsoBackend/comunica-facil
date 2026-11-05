@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import criarContaScreen from '../criarContaScreen';
+import CriarContaScreen from '../CriarContaScreen';
 
 const mockFindByEmail = jest.fn();
 const mockCreate = jest.fn();

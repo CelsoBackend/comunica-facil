@@ -1,6 +1,6 @@
 import { getDatabase } from '../storage';
 
-export type SessaoRecord = {
+export type SessaoEntity = {
   id: string;
   ativa: boolean;
   usuarioNome: string | null;
@@ -16,7 +16,7 @@ type SessaoRow = {
   atualizado_em: string;
 };
 
-const mapSessaoRow = (row: SessaoRow): SessaoRecord => ({
+const mapSessaoRow = (row: SessaoRow): SessaoEntity => ({
   id: row.id,
   ativa: row.ativa === 1,
   usuarioNome: row.usuario_nome,
@@ -25,7 +25,7 @@ const mapSessaoRow = (row: SessaoRow): SessaoRecord => ({
 });
 
 export class SessaoRepository {
-  async save(sessao: SessaoRecord): Promise<void> {
+  async save(sessao: SessaoEntity): Promise<void> {
     const database = await getDatabase();
     await database.runAsync(
       `INSERT INTO SessaoApp (id, ativa, usuario_nome, criado_em, atualizado_em)
@@ -42,7 +42,7 @@ export class SessaoRepository {
     );
   }
 
-  async findById(id: string): Promise<SessaoRecord | null> {
+  async findById(id: string): Promise<SessaoEntity | null> {
     const database = await getDatabase();
     const row = await database.getFirstAsync<SessaoRow>('SELECT * FROM SessaoApp WHERE id = ?;', id);
     return row ? mapSessaoRow(row) : null;

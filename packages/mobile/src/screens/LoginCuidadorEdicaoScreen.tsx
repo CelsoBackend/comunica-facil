@@ -3,14 +3,16 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../App';
-import { SessaoRepository, UsuarioRepository } from '@/data/repositories';
+import { ConfiguracaoAcessoRepository, SessaoRepository, UsuarioRepository } from '@/data/repositories';
 import { runMigrations } from '@/data/storage';
-import { isEmailValido } from '@/domain/security/email';
-import { hashSenha } from '@/domain/security/hash';
+import { isEmailValido } from '@/domain/security/utils/email';
+import { hashSenha } from '@/domain/security/utils/hash';
 
 const usuarioRepository = new UsuarioRepository();
+const configuracaoAcessoRepository = new ConfiguracaoAcessoRepository();
 const sessaoRepository = new SessaoRepository();
 
+const CONFIGURACAO_ACESSO_ID = 'principal';
 const SESSAO_ID = 'principal';
 
 const getMensagemErro = (erro: unknown): string => {
@@ -21,32 +23,19 @@ const getMensagemErro = (erro: unknown): string => {
   return 'Tente novamente em instantes.';
 };
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'LoginCuidadorEdicao'>;
 
-export default function AuthScreen({ navigation }: Props) {
+export default function LoginCuidadorEdicaoScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const salvarSessaoAtiva = useCallback(async (usuarioNome: string) => {
-    const agora = new Date().toISOString();
-    const sessaoExistente = await sessaoRepository.findById(SESSAO_ID);
-
-    await sessaoRepository.save({
-      id: SESSAO_ID,
-      ativa: true,
-      usuarioNome,
-      criadoEm: sessaoExistente?.criadoEm ?? agora,
-      atualizadoEm: agora,
-    });
-  }, []);
-
-  const fazerLogin = useCallback(async () => {
+  const autenticarCuidador = useCallback(async () => {
     const emailNormalizado = email.trim();
     const senhaNormalizada = senha.trim();
 
     if (!emailNormalizado || !senhaNormalizada) {
-      Alert.alert('Atenção', 'Informe email e senha.');
+      Alert.alert('Atenção', 'Informe email e senha do cuidador.');
       return;
     }
 
@@ -56,36 +45,50 @@ export default function AuthScreen({ navigation }: Props) {
     }
 
     setLoading(true);
-
     try {
       await runMigrations();
-      const usuario = await usuarioRepository.findByEmail(emailNormalizado);
+      const sessao = await sessaoRepository.findById(SESSAO_ID);
 
-      if (!usuario || usuario.senhaHash !== hashSenha(senhaNormalizada)) {
-        Alert.alert('Acesso negado', 'Credenciais inválidas.');
+      if (!sessao?.usuarioNome) {
+        Alert.alert('Sessão inválida', 'Faça login como paciente para continuar.');
+        navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
         return;
       }
 
-      if (usuario.tipo !== 'paciente') {
-        Alert.alert('Acesso negado', 'Use o login do paciente para acessar a Home.');
+      const paciente = await usuarioRepository.findByNome(sessao.usuarioNome);
+      if (!paciente || paciente.tipo !== 'paciente') {
+        Alert.alert('Sessão inválida', 'Faça login como paciente para continuar.');
+        navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
         return;
       }
 
-      await salvarSessaoAtiva(usuario.nome);
-      setSenha('');
+      const cuidador = await usuarioRepository.findByTipoAndPacienteId('cuidador', paciente.id);
+
+      if (!cuidador || cuidador.email !== emailNormalizado || cuidador.senhaHash !== hashSenha(senhaNormalizada)) {
+        Alert.alert('Acesso negado', 'Credenciais inválidas do cuidador.');
+        return;
+      }
+
+      await configuracaoAcessoRepository.save({
+        id: CONFIGURACAO_ACESSO_ID,
+        modoEdicaoAtivo: true,
+        ultimoAcessoCuidadorEm: new Date().toISOString(),
+      });
+
+      Alert.alert('Modo edição ativo', 'Acesso do cuidador liberado para gestão.');
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch (erro) {
       console.error(erro);
-      Alert.alert('Falha no login', getMensagemErro(erro));
+      Alert.alert('Falha ao autenticar cuidador', getMensagemErro(erro));
     } finally {
       setLoading(false);
     }
-  }, [email, navigation, salvarSessaoAtiva, senha]);
+  }, [email, navigation, senha]);
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>login</Text>
+        <Text style={styles.title}>Login Cuidador</Text>
 
         <TextInput placeholder="email" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" />
         <TextInput
@@ -97,16 +100,12 @@ export default function AuthScreen({ navigation }: Props) {
           autoCapitalize="none"
         />
 
-        <Pressable style={styles.button} onPress={fazerLogin} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'Carregando...' : 'Login'}</Text>
-        </Pressable>
-
-        <Pressable style={styles.buttonSecondary} onPress={() => navigation.navigate('CriarConta')} disabled={loading}>
-          <Text style={styles.buttonSecondaryText}>Criar conta</Text>
+        <Pressable style={styles.button} onPress={autenticarCuidador} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Carregando...' : 'Entrar no modo edição'}</Text>
         </Pressable>
 
         <Pressable style={styles.buttonSecondary} onPress={() => navigation.navigate('ResetarSenha')} disabled={loading}>
-          <Text style={styles.buttonSecondaryText}>Resetar senha</Text>
+          <Text style={styles.buttonSecondaryText}>Resetar Senha</Text>
         </Pressable>
       </View>
     </View>
@@ -132,10 +131,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    width: '100%',
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,

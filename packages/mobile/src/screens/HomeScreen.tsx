@@ -8,22 +8,40 @@ import {
   Pressable,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 
 import {
-  BotaoRecord,
+  BotaoEntity,
   BotaoRepository,
   ConfiguracaoAcessoRepository,
   SessaoRepository,
   UsuarioRepository,
 } from '@/data/repositories';
 import { runMigrations } from '@/data/storage';
-import { Botao } from '@/domain/entities';
-import { isEmailValido } from '@/domain/security/email';
-import { hashSenha } from '@/domain/security/hash';
+import { Botao } from '@/domain/models';
+import { isEmailValido } from '@/domain/security/utils/email';
+import { hashSenha } from '@/domain/security/utils/hash';
+import {
+  getMensagemErro as getMensagemErroService,
+  criarId as criarIdService,
+  garantirBotoesPadrao,
+  buscarBotoesAtivos,
+  criarBotao as criarBotaoService,
+  atualizarBotao as atualizarBotaoService,
+  excluirBotaoEReordenar,
+  moverBotao as moverBotaoService,
+  validarCorHex as validarCorHexService,
+  COR_PADRAO_BOTAO,
+  criarPaciente,
+  validaCriarPaciente,
+  criarCuidador,
+  validaCriarCuidador,
+  buscarSessaoAtiva,
+} from '@/domain/services';
 
 type ModoTela = 'loading' | 'cadastroPaciente' | 'home';
 
@@ -34,7 +52,7 @@ const sessaoRepository = new SessaoRepository();
 const CONFIGURACAO_ACESSO_ID = 'principal';
 const SESSAO_ID = 'principal';
 const SENHA_MINIMA_CARACTERES = 6;
-const COR_PADRAO = '#86EFAC';
+const COR_PADRAO = COR_PADRAO_BOTAO;
 
 const CORES_PRESET = [
   { nome: 'Verde claro', valor: '#86EFAC' },
@@ -50,21 +68,6 @@ const CORES_PRESET = [
   { nome: 'Amarelo claro', valor: '#FDE68A' },
 ] as const;
 
-const BOTOES_PADRAO = [
-  { texto: 'Sim', cor: '#86EFAC' },
-  { texto: 'Não', cor: '#FCA5A5' },
-  { texto: 'Sede', cor: '#60A5FA' },
-  { texto: 'Fome', cor: '#FB923C' },
-  { texto: 'Banheiro', cor: '#92400E' },
-  { texto: 'Dor', cor: '#EF4444' },
-  { texto: 'Trocar Fralda', cor: '#A78BFA' },
-  { texto: 'Mudar de Posição', cor: '#F9A8D4' },
-  { texto: 'Trocar Canal', cor: '#8B5CF6' },
-  { texto: 'Obrigado', cor: '#7DD3FC' },
-  { texto: 'Desculpe', cor: '#FDE68A' },
-] as const;
-
-const criarId = (): string => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   const sanitized = hex.trim().replace('#', '');
@@ -90,15 +93,10 @@ const getCorTextoPorContraste = (hexColor: string): string => {
   return luminancia > 0.6 ? '#111827' : '#ffffff';
 };
 
-const getMensagemErro = (erro: unknown): string => {
-  if (erro instanceof Error && erro.message.trim().length > 0) {
-    return erro.message;
-  }
+const getMensagemErro = getMensagemErroService;
+const criarId = criarIdService;
 
-  return 'Tente novamente em instantes.';
-};
-
-export default function homeScreen() {
+export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [modoTela, setModoTela] = useState<ModoTela>('loading');
   const [loading, setLoading] = useState(true);
@@ -113,7 +111,7 @@ export default function homeScreen() {
   const [hasCuidador, setHasCuidador] = useState(false);
   const [mostrarCadastroCuidador, setMostrarCadastroCuidador] = useState(false);
   const [modoEdicaoAtivo, setModoEdicaoAtivo] = useState(false);
-  const [botoes, setBotoes] = useState<BotaoRecord[]>([]);
+  const [botoes, setBotoes] = useState<BotaoEntity[]>([]);
   const [novoBotaoTexto, setNovoBotaoTexto] = useState('');
   const [novoBotaoCor, setNovoBotaoCor] = useState(COR_PADRAO);
   const [botaoEmEdicaoId, setBotaoEmEdicaoId] = useState<string | null>(null);
@@ -130,28 +128,6 @@ export default function homeScreen() {
   const carregarBotoesAtivos = useCallback(async () => {
     const botoesAtivos = await botaoRepository.findAll(true);
     setBotoes(botoesAtivos);
-  }, []);
-
-  const garantirBotoesPadrao = useCallback(async () => {
-    const existentes = await botaoRepository.findAll(false);
-
-    if (existentes.length > 0) {
-      return;
-    }
-
-    const agora = new Date().toISOString();
-    for (let index = 0; index < BOTOES_PADRAO.length; index += 1) {
-      const item = BOTOES_PADRAO[index];
-      await botaoRepository.create({
-        id: criarId(),
-        texto: item.texto,
-        cor: item.cor,
-        ordem: index + 1,
-        ativo: true,
-        criadoEm: agora,
-        atualizadoEm: agora,
-      });
-    }
   }, []);
 
   const carregarEstadoInicial = useCallback(async () => {
@@ -370,7 +346,7 @@ export default function homeScreen() {
     }
   }, [botoes.length, carregarBotoesAtivos, novoBotaoCor, novoBotaoTexto, validarCorHex, voltarParaHomeSegura]);
 
-  const iniciarEdicao = useCallback((botao: BotaoRecord) => {
+  const iniciarEdicao = useCallback((botao: BotaoEntity) => {
     setBotaoEmEdicaoId(botao.id);
     setEdicaoTexto(botao.texto);
     setEdicaoCor(botao.cor);
@@ -558,6 +534,7 @@ export default function homeScreen() {
         </Pressable>
       ) : null}
 
+      <Image source={require('../../assets/icon.png')} style={styles.icon} resizeMode="contain" />
       <Text style={styles.subtitle}>Olá, {pacienteAtualNome}</Text>
       <Text style={styles.status}>{modoEdicaoAtivo ? 'Modo edição ativo' : 'Modo paciente ativo'}</Text>
 
@@ -699,11 +676,11 @@ export default function homeScreen() {
         <>
           {!mostrarCadastroCuidador ? (
             <Pressable style={styles.buttonSecondary} onPress={() => setMostrarCadastroCuidador(true)}>
-              <Text style={styles.buttonSecondaryText}>Criar conta cuidador</Text>
+              <Text style={styles.buttonSecondaryText}>Criar Conta Cuidador</Text>
             </Pressable>
           ) : (
             <View style={styles.formSection}>
-              <Text style={styles.formTitle}>Cadastro de cuidador</Text>
+              <Text style={styles.formTitle}>Cadastro de Cuidador</Text>
               <TextInput
                 placeholder="Nome do cuidador"
                 value={cuidadorNome}
@@ -773,6 +750,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
+  },
+  icon: {
+    width: 64,
+    height: 64,
+    alignSelf: 'center',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 20,

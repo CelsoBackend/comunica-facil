@@ -5,12 +5,12 @@ import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { runMigrations } from '@/data/storage';
 import { SessaoRepository } from '@/data/repositories';
-import AuthScreen from '@/screens/authScreen';
-import criarContaScreen from '@/screens/criarContaScreen';
-import homeScreen from '@/screens/homeScreen';
-import loginCuidadorEdicaoScreen from '@/screens/loginCuidadorEdicaoScreen';
-import mensagemTelaCheiaScreen from '@/screens/mensagemTelaCheiaScreen';
-import resetarSenhaScreen from '@/screens/resetarSenhaScreen';
+import AuthScreen from '@/screens/AuthScreen';
+import CriarContaScreen from '@/screens/CriarContaScreen';
+import HomeScreen from '@/screens/HomeScreen';
+import LoginCuidadorEdicaoScreen from '@/screens/LoginCuidadorEdicaoScreen';
+import MensagemTelaCheiaScreen from '@/screens/MensagemTelaCheiaScreen';
+import ResetarSenhaScreen from '@/screens/ResetarSenhaScreen';
 
 const sessaoRepository = new SessaoRepository();
 const SESSAO_ID = 'principal';
@@ -68,17 +68,17 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator initialRouteName={rotaInicial}>
           <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'login' }} />
-          <Stack.Screen name="CriarConta" component={criarContaScreen} options={{ title: 'criar conta' }} />
-          <Stack.Screen name="Home" component={homeScreen} options={{ title: 'Comunica Fácil' }} />
+          <Stack.Screen name="CriarConta" component={CriarContaScreen} options={{ title: 'criar conta' }} />
+          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Comunica Fácil' }} />
           <Stack.Screen
             name="LoginCuidadorEdicao"
-            component={loginCuidadorEdicaoScreen}
+            component={LoginCuidadorEdicaoScreen}
             options={{ title: 'login cuidador' }}
           />
-          <Stack.Screen name="ResetarSenha" component={resetarSenhaScreen} options={{ title: 'resetar senha' }} />
+          <Stack.Screen name="ResetarSenha" component={ResetarSenhaScreen} options={{ title: 'resetar senha' }} />
           <Stack.Screen
             name="MensagemTelaCheia"
-            component={mensagemTelaCheiaScreen}
+            component={MensagemTelaCheiaScreen}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>

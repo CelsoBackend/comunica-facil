@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import mensagemTelaCheiaScreen from '../mensagemTelaCheiaScreen';
+import MensagemTelaCheiaScreen from '../MensagemTelaCheiaScreen';
 
 const mockSpeak = jest.fn();
 const mockStop = jest.fn();

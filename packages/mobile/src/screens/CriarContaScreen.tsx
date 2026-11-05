@@ -1,88 +1,40 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../App';
-import { SessaoRepository, UsuarioRepository } from '@/data/repositories';
-import { runMigrations } from '@/data/storage';
-import { isEmailValido } from '@/domain/security/email';
-import { hashSenha } from '@/domain/security/hash';
-
-const usuarioRepository = new UsuarioRepository();
-const sessaoRepository = new SessaoRepository();
-
-const SENHA_MINIMA_CARACTERES = 6;
-const SESSAO_ID = 'principal';
-
-const criarId = (): string => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-const getMensagemErro = (erro: unknown): string => {
-  if (erro instanceof Error && erro.message.trim().length > 0) {
-    return erro.message;
-  }
-
-  return 'Tente novamente em instantes.';
-};
+import { criarConta, encerrarSessao, getMensagemErro, validaCriarConta } from '@/domain/services';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CriarConta'>;
 
-export default function criarContaScreen({ navigation }: Props) {
+export default function CriarContaScreen({ navigation }: Props) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const criarConta = useCallback(async () => {
+  const handleCriarConta = useCallback(async () => {
     const nomeNormalizado = nome.trim();
     const emailNormalizado = email.trim();
     const senhaNormalizada = senha.trim();
 
-    if (!nomeNormalizado || !emailNormalizado || !senhaNormalizada) {
-      Alert.alert('Atenção', 'Informe nome, email e senha para criar conta.');
-      return;
-    }
-
-    if (!isEmailValido(emailNormalizado)) {
-      Alert.alert('Email inválido', 'Informe um email válido.');
-      return;
-    }
-
-    if (senhaNormalizada.length < SENHA_MINIMA_CARACTERES) {
-      Alert.alert('Senha inválida', `A senha deve ter pelo menos ${SENHA_MINIMA_CARACTERES} caracteres.`);
+    const validacao = validaCriarConta(nomeNormalizado, emailNormalizado, senhaNormalizada);
+    if (!validacao.valido) {
+      Alert.alert(validacao.titulo, validacao.mensagem);
       return;
     }
 
     setLoading(true);
 
     try {
-      await runMigrations();
-      const usuarioExistente = await usuarioRepository.findByEmail(emailNormalizado);
+      const resultado = await criarConta(nomeNormalizado, emailNormalizado, senhaNormalizada);
 
-      if (usuarioExistente) {
-        Alert.alert('Conta existente', 'Já existe uma conta cadastrada com este email.');
+      if (!resultado.sucesso) {
+        Alert.alert(resultado.titulo, resultado.mensagem);
         return;
       }
 
-      await usuarioRepository.create({
-        id: criarId(),
-        nome: nomeNormalizado,
-        email: emailNormalizado,
-        senhaHash: hashSenha(senhaNormalizada),
-        tipo: 'paciente',
-        criadoEm: new Date().toISOString(),
-      });
-
-      const agora = new Date().toISOString();
-      const sessaoExistente = await sessaoRepository.findById(SESSAO_ID);
-
-      await sessaoRepository.save({
-        id: SESSAO_ID,
-        ativa: false,
-        usuarioNome: null,
-        criadoEm: sessaoExistente?.criadoEm ?? agora,
-        atualizadoEm: agora,
-      });
-
+      await encerrarSessao();
       Alert.alert('Conta criada', 'Conta criada com sucesso.');
       navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
     } catch (erro) {
@@ -96,6 +48,7 @@ export default function criarContaScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
+        <Image source={require('../../assets/icon.png')} style={styles.icon} resizeMode="contain" />
         <Text style={styles.title}>criar conta</Text>
 
         <TextInput placeholder="nome" value={nome} onChangeText={setNome} style={styles.input} autoCapitalize="words" />
@@ -109,7 +62,7 @@ export default function criarContaScreen({ navigation }: Props) {
           autoCapitalize="none"
         />
 
-        <Pressable style={styles.button} onPress={criarConta} disabled={loading}>
+        <Pressable style={styles.button} onPress={handleCriarConta} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Carregando...' : 'Criar conta'}</Text>
         </Pressable>
       </View>
@@ -134,12 +87,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
     gap: 10,
+    alignItems: 'center',
+  },
+  icon: {
+    width: 80,
+    height: 80,
+    marginBottom: 4,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
+    alignSelf: 'flex-start',
   },
   input: {
     borderWidth: 1,
@@ -148,6 +108,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: '#ffffff',
+    width: '100%',
   },
   button: {
     marginTop: 8,
@@ -156,6 +117,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#ffffff',

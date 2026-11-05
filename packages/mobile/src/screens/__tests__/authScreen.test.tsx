@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import AuthScreen from '../authScreen';
+import AuthScreen from '../AuthScreen';
 
 const mockFindByEmail = jest.fn();
 const mockFindSessao = jest.fn();
