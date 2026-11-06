@@ -6,47 +6,36 @@ import type { RootStackParamList } from '../../App';
 
 import {
   BotaoEntity,
-  BotaoRepository,
   ConfiguracaoAcessoRepository,
   SessaoRepository,
   UsuarioRepository,
 } from '@/data/repositories';
 import { runMigrations } from '@/data/storage';
 import { Botao } from '@/domain/models';
-import { isEmailValido } from '@/domain/security/utils/email';
-import { hashSenha } from '@/domain/security/utils/hash';
 import {
   getMensagemErro as getMensagemErroService,
   criarId as criarIdService,
-  garantirBotoesPadrao,
-  buscarBotoesAtivos,
-  criarBotao as criarBotaoService,
-  atualizarBotao as atualizarBotaoService,
-  excluirBotaoEReordenar,
-  moverBotao as moverBotaoService,
-  validarCorHex as validarCorHexService,
   COR_PADRAO_BOTAO,
-  criarPaciente,
-  validaCriarPaciente,
-  criarCuidador,
-  validaCriarCuidador,
-  buscarSessaoAtiva,
+  BotaoService,
+  CuidadorService, SENHA_MINIMA_CARACTERES,
 } from '@/domain/services';
 import HomeView from "@/screens/views/HomeView";
+import {hashSenha} from "@/domain/security/utils/hash";
 
 type ModoTela = 'loading' | 'cadastroPaciente' | 'home';
 
 const usuarioRepository = new UsuarioRepository();
-const botaoRepository = new BotaoRepository();
 const configuracaoAcessoRepository = new ConfiguracaoAcessoRepository();
 const sessaoRepository = new SessaoRepository();
 const CONFIGURACAO_ACESSO_ID = 'principal';
 const SESSAO_ID = 'principal';
-const SENHA_MINIMA_CARACTERES = 6;
 const COR_PADRAO = COR_PADRAO_BOTAO;
 
 const getMensagemErro = getMensagemErroService;
 const criarId = criarIdService;
+
+const botaoService = new BotaoService();
+const cuidadorService = new CuidadorService();
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -78,7 +67,7 @@ export default function HomeScreen() {
   }, []);
 
   const carregarBotoesAtivos = useCallback(async () => {
-    const botoesAtivos = await botaoRepository.findAll(true);
+    const botoesAtivos = await botaoService.buscarBotoesAtivos();
     setBotoes(botoesAtivos);
   }, []);
 
@@ -89,11 +78,11 @@ export default function HomeScreen() {
       await runMigrations();
       const paciente = await usuarioRepository.findByTipo('paciente');
       const cuidador = paciente
-        ? await usuarioRepository.findByTipoAndPacienteId('cuidador', paciente.id)
+        ? await cuidadorService.buscarCuidadorDoPaciente(paciente.id)
         : null;
       const configuracaoAcesso = await configuracaoAcessoRepository.findById(CONFIGURACAO_ACESSO_ID);
 
-      await garantirBotoesPadrao();
+      await botaoService.garantirBotoesPadrao();
 
       setPacienteAtualId(paciente?.id ?? null);
       setPacienteAtualNome(paciente?.nome ?? '');
@@ -104,7 +93,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [carregarBotoesAtivos, garantirBotoesPadrao]);
+  }, [carregarBotoesAtivos]);
 
   useEffect(() => {
     carregarEstadoInicial();
@@ -154,7 +143,7 @@ export default function HomeScreen() {
         criadoEm: new Date().toISOString(),
       });
 
-      await garantirBotoesPadrao();
+      await botaoService.garantirBotoesPadrao();
       setPacienteNome('');
       setPacienteSenha('');
       await carregarEstadoInicial();
@@ -165,7 +154,7 @@ export default function HomeScreen() {
     } finally {
       setSaving(false);
     }
-  }, [carregarEstadoInicial, garantirBotoesPadrao, pacienteNome, pacienteSenha, voltarParaHomeSegura]);
+  }, [carregarEstadoInicial, pacienteNome, pacienteSenha, voltarParaHomeSegura]);
 
   const salvarCuidador = useCallback(async () => {
     if (!pacienteAtualId) {
@@ -173,49 +162,24 @@ export default function HomeScreen() {
       return;
     }
 
-    if (hasCuidador) {
-      Alert.alert('Limite atingido', 'No MVP, é permitido cadastrar apenas 1 cuidador.');
-      setMostrarCadastroCuidador(false);
-      return;
-    }
-
     const nome = cuidadorNome.trim();
     const email = cuidadorEmail.trim();
     const senha = cuidadorSenha.trim();
 
-    if (!nome || !email || !senha) {
-      Alert.alert('Atenção', 'Preencha nome, email e senha para criar o cuidador.');
-      return;
-    }
-
-    if (!isEmailValido(email)) {
-      Alert.alert('Email inválido', 'Informe um email válido para o cuidador.');
-      return;
-    }
-
-    const usuarioExistente = await usuarioRepository.findByEmail(email);
-    if (usuarioExistente) {
-      Alert.alert('Conta existente', 'Já existe uma conta cadastrada com este email.');
-      return;
-    }
-
-    if (senha.length < SENHA_MINIMA_CARACTERES) {
-      Alert.alert('Senha inválida', `A senha deve ter pelo menos ${SENHA_MINIMA_CARACTERES} caracteres.`);
+    const validacao = cuidadorService.validarCuidador(nome, email, senha, hasCuidador);
+    if (!validacao.valido) {
+      Alert.alert(validacao.titulo, validacao.mensagem);
       return;
     }
 
     setSaving(true);
 
     try {
-      await usuarioRepository.create({
-        id: criarId(),
-        nome,
-        email,
-        pacienteId: pacienteAtualId,
-        senhaHash: hashSenha(senha),
-        tipo: 'cuidador',
-        criadoEm: new Date().toISOString(),
-      });
+      const resultado = await cuidadorService.criarCuidador(nome, email, senha, pacienteAtualId);
+      if (!resultado.sucesso) {
+        Alert.alert(resultado.titulo ?? 'Erro', resultado.mensagem ?? '');
+        return;
+      }
       setCuidadorNome('');
       setCuidadorEmail('');
       setCuidadorSenha('');
@@ -253,10 +217,6 @@ export default function HomeScreen() {
     }
   }, [voltarParaHomeSegura]);
 
-  const validarCorHex = useCallback((cor: string): boolean => {
-    return /^#[0-9A-Fa-f]{6}$/.test(cor.trim());
-  }, []);
-
   const criarBotao = useCallback(async () => {
     const texto = novoBotaoTexto.trim();
     const cor = novoBotaoCor.trim();
@@ -266,25 +226,19 @@ export default function HomeScreen() {
       return;
     }
 
-    if (!validarCorHex(cor)) {
+    if (!botaoService.validarCorHex(cor)) {
       Alert.alert('Atenção', 'Informe uma cor válida no formato #RRGGBB.');
       return;
     }
 
     setSaving(true);
 
-    try {
-      const proximaOrdem = botoes.length + 1;
-      const agora = new Date().toISOString();
-      await botaoRepository.create({
-        id: criarId(),
+    try {      
+      await botaoService.criarBotao(
         texto,
         cor,
-        ordem: proximaOrdem,
-        ativo: true,
-        criadoEm: agora,
-        atualizadoEm: agora,
-      });
+        botoes.length,
+      );
 
       setNovoBotaoTexto('');
       setNovoBotaoCor(COR_PADRAO);
@@ -296,7 +250,7 @@ export default function HomeScreen() {
     } finally {
       setSaving(false);
     }
-  }, [botoes.length, carregarBotoesAtivos, novoBotaoCor, novoBotaoTexto, validarCorHex, voltarParaHomeSegura]);
+  }, [botoes.length, carregarBotoesAtivos, novoBotaoCor, novoBotaoTexto, voltarParaHomeSegura]);
 
   const iniciarEdicao = useCallback((botao: BotaoEntity) => {
     setBotaoEmEdicaoId(botao.id);
@@ -311,13 +265,14 @@ export default function HomeScreen() {
 
     const texto = edicaoTexto.trim();
     const cor = edicaoCor.trim();
+    const validarCorHex = botaoService.validarCorHex(cor);
 
     if (!texto) {
       Alert.alert('Atenção', 'Informe o texto do botão.');
       return;
     }
 
-    if (!validarCorHex(cor)) {
+    if (!validarCorHex) {
       Alert.alert('Atenção', 'Informe uma cor válida no formato #RRGGBB.');
       return;
     }
@@ -329,12 +284,7 @@ export default function HomeScreen() {
 
     setSaving(true);
     try {
-      await botaoRepository.update({
-        ...botaoAtual,
-        texto,
-        cor,
-        atualizadoEm: new Date().toISOString(),
-      });
+      await botaoService.atualizarBotao(botaoAtual, texto, cor);
       setBotaoEmEdicaoId(null);
       await carregarBotoesAtivos();
     } catch (erro) {
@@ -344,7 +294,7 @@ export default function HomeScreen() {
     } finally {
       setSaving(false);
     }
-  }, [botaoEmEdicaoId, botoes, botaoRepository, edicaoCor, edicaoTexto, carregarBotoesAtivos, validarCorHex, voltarParaHomeSegura]);
+  }, [botaoEmEdicaoId, botoes, edicaoCor, edicaoTexto, carregarBotoesAtivos, voltarParaHomeSegura]);
 
   const excluirBotao = useCallback((id: string) => {
     Alert.alert('Excluir botão', 'Tem certeza que deseja excluir este botão?', [
@@ -355,22 +305,7 @@ export default function HomeScreen() {
         onPress: async () => {
           setSaving(true);
           try {
-            await botaoRepository.delete(id);
-            const restantes = (await botaoRepository.findAll(true)).sort((a, b) => a.ordem - b.ordem);
-
-            for (let index = 0; index < restantes.length; index += 1) {
-              const item = restantes[index];
-              const novaOrdem = index + 1;
-
-              if (item.ordem !== novaOrdem) {
-                await botaoRepository.update({
-                  ...item,
-                  ordem: novaOrdem,
-                  atualizadoEm: new Date().toISOString(),
-                });
-              }
-            }
-
+            await botaoService.excluirBotaoEReordenar(id);
             if (botaoEmEdicaoId === id) {
               setBotaoEmEdicaoId(null);
             }
@@ -390,35 +325,9 @@ export default function HomeScreen() {
 
   const moverBotao = useCallback(
     async (id: string, direcao: 'up' | 'down') => {
-      const indiceAtual = botoes.findIndex((item) => item.id === id);
-      if (indiceAtual === -1) {
-        return;
-      }
-
-      const indiceDestino = direcao === 'up' ? indiceAtual - 1 : indiceAtual + 1;
-      if (indiceDestino < 0 || indiceDestino >= botoes.length) {
-        return;
-      }
-
-      const reordenados = [...botoes];
-      const [movido] = reordenados.splice(indiceAtual, 1);
-      reordenados.splice(indiceDestino, 0, movido);
-
       setSaving(true);
       try {
-        const agora = new Date().toISOString();
-        for (let index = 0; index < reordenados.length; index += 1) {
-          const item = reordenados[index];
-          const novaOrdem = index + 1;
-
-          if (item.ordem !== novaOrdem) {
-            await botaoRepository.update({
-              ...item,
-              ordem: novaOrdem,
-              atualizadoEm: agora,
-            });
-          }
-        }
+        await botaoService.moverBotao(botoes, id, direcao);
         await carregarBotoesAtivos();
       } catch (erro) {
         console.error(erro);
