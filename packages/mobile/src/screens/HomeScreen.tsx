@@ -17,10 +17,10 @@ import {
   criarId as criarIdService,
   COR_PADRAO_BOTAO,
   BotaoService,
-  CuidadorService, SENHA_MINIMA_CARACTERES,
+  CuidadorService,
+  PacienteService,
 } from '@/domain/services';
 import HomeView from "@/screens/views/HomeView";
-import {hashSenha} from "@/domain/security/utils/hash";
 
 type ModoTela = 'loading' | 'cadastroPaciente' | 'home';
 
@@ -32,10 +32,10 @@ const SESSAO_ID = 'principal';
 const COR_PADRAO = COR_PADRAO_BOTAO;
 
 const getMensagemErro = getMensagemErroService;
-const criarId = criarIdService;
 
 const botaoService = new BotaoService();
 const cuidadorService = new CuidadorService();
+const pacienteService = new PacienteService();
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -122,27 +122,16 @@ export default function HomeScreen() {
     const nome = pacienteNome.trim();
     const senha = pacienteSenha.trim();
 
-    if (!nome || !senha) {
-      Alert.alert('Atenção', 'Preencha nome e senha para criar a conta do paciente.');
-      return;
-    }
-
-    if (senha.length < SENHA_MINIMA_CARACTERES) {
-      Alert.alert('Senha inválida', `A senha deve ter pelo menos ${SENHA_MINIMA_CARACTERES} caracteres.`);
+    const validacao = pacienteService.validarPaciente(nome, senha);
+    if (!validacao.valido) {
+      Alert.alert(validacao.titulo, validacao.mensagem);
       return;
     }
 
     setSaving(true);
 
     try {
-      await usuarioRepository.create({
-        id: criarId(),
-        nome,
-        senhaHash: hashSenha(senha),
-        tipo: 'paciente',
-        criadoEm: new Date().toISOString(),
-      });
-
+      await pacienteService.criarPaciente(nome, senha);
       await botaoService.garantirBotoesPadrao();
       setPacienteNome('');
       setPacienteSenha('');
