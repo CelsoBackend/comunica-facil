@@ -1,35 +1,37 @@
-import { SessaoRepository } from '@/data/repositories';
-
-const sessaoRepository = new SessaoRepository();
+import {SessaoRepository} from '@/data/repositories';
 
 export const SESSAO_ID = 'principal';
 
-export const salvarSessaoAtiva = async (usuarioNome: string): Promise<void> => {
-  const agora = new Date().toISOString();
-  const sessaoExistente = await sessaoRepository.findById(SESSAO_ID);
+export class SessaoService {
+    private readonly sessaoRepository = new SessaoRepository();
 
-  await sessaoRepository.save({
-    id: SESSAO_ID,
-    ativa: true,
-    usuarioNome,
-    criadoEm: sessaoExistente?.criadoEm ?? agora,
-    atualizadoEm: agora,
-  });
-};
+    public async salvarSessaoAtiva(usuarioNome: string): Promise<void> {
+        const agora = new Date().toISOString();
+        const sessaoExistente = await this.sessaoRepository.findById(SESSAO_ID);
 
-export const encerrarSessao = async (): Promise<void> => {
-  const agora = new Date().toISOString();
-  const sessaoExistente = await sessaoRepository.findById(SESSAO_ID);
+        await this.sessaoRepository.save({
+            id: SESSAO_ID,
+            ativa: true,
+            usuarioNome,
+            criadoEm: sessaoExistente?.criadoEm ?? agora,
+            atualizadoEm: agora,
+        });
+    }
 
-  await sessaoRepository.save({
-    id: SESSAO_ID,
-    ativa: false,
-    usuarioNome: null,
-    criadoEm: sessaoExistente?.criadoEm ?? agora,
-    atualizadoEm: agora,
-  });
-};
+    public async encerrarSessao(): Promise<void> {
+        const agora = new Date().toISOString();
+        const sessaoExistente = await this.sessaoRepository.findById(SESSAO_ID);
 
-export const buscarSessaoAtiva = async () => {
-  return sessaoRepository.findById(SESSAO_ID);
-};
+        await this.sessaoRepository.save({
+            id: SESSAO_ID,
+            ativa: false,
+            usuarioNome: null,
+            criadoEm: sessaoExistente?.criadoEm ?? agora,
+            atualizadoEm: agora,
+        });
+    }
+
+    public async buscarSessaoAtiva() {
+        return this.sessaoRepository.findById(SESSAO_ID);
+    }
+}

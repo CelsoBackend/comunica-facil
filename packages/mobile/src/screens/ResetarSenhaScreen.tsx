@@ -3,8 +3,10 @@ import { Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../App';
-import { getMensagemErro, resetarSenha, validaResetarSenha } from '@/domain/services';
+import { getMensagemErro, UsuarioService } from '@/domain/services';
 import ResetarSenhaView from "@/screens/views/ResetarSenhaView";
+
+const usuarioService = new UsuarioService();
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ResetarSenha'>;
 
@@ -17,7 +19,7 @@ export default function ResetarSenhaScreen({ navigation }: Props) {
     const emailNormalizado = email.trim();
     const senhaNormalizada = novaSenha.trim();
 
-    const validacao = validaResetarSenha(emailNormalizado, senhaNormalizada);
+    const validacao = usuarioService.validarResetarSenha(emailNormalizado, senhaNormalizada);
     if (!validacao.valido) {
       Alert.alert(validacao.titulo, validacao.mensagem);
       return;
@@ -26,7 +28,7 @@ export default function ResetarSenhaScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const resultado = await resetarSenha(emailNormalizado, senhaNormalizada);
+      const resultado = await usuarioService.resetarSenha(emailNormalizado, senhaNormalizada);
 
       if (!resultado.sucesso) {
         Alert.alert(resultado.titulo, resultado.mensagem);

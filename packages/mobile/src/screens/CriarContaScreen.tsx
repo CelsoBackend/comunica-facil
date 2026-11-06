@@ -3,8 +3,11 @@ import { Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../App';
-import { criarConta, encerrarSessao, getMensagemErro, validaCriarConta } from '@/domain/services';
+import { getMensagemErro, UsuarioService, SessaoService } from '@/domain/services';
 import CriarContaView from "@/screens/views/CriarContaView";
+
+const usuarioService = new UsuarioService();
+const sessaoService = new SessaoService();
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CriarConta'>;
 
@@ -19,7 +22,7 @@ export default function CriarContaScreen({ navigation }: Props) {
     const emailNormalizado = email.trim();
     const senhaNormalizada = senha.trim();
 
-    const validacao = validaCriarConta(nomeNormalizado, emailNormalizado, senhaNormalizada);
+    const validacao = usuarioService.validarCriarConta(nomeNormalizado, emailNormalizado, senhaNormalizada);
     if (!validacao.valido) {
       Alert.alert(validacao.titulo, validacao.mensagem);
       return;
@@ -28,14 +31,14 @@ export default function CriarContaScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const resultado = await criarConta(nomeNormalizado, emailNormalizado, senhaNormalizada);
+      const resultado = await usuarioService.criarConta(nomeNormalizado, emailNormalizado, senhaNormalizada);
 
       if (!resultado.sucesso) {
         Alert.alert(resultado.titulo, resultado.mensagem);
         return;
       }
 
-      await encerrarSessao();
+      await sessaoService.encerrarSessao();
       Alert.alert('Conta criada', 'Conta criada com sucesso.');
       navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
     } catch (erro) {
