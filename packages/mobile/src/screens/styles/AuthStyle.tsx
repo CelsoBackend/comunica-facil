@@ -1,0 +1,71 @@
+import { StyleSheet } from 'react-native';
+
+export const stylesAuth = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 16,
+        backgroundColor: '#f3f4f6',
+    },
+    card: {
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: '#000000',
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 2,
+        gap: 10,
+        alignItems: 'center',
+    },
+    icon: {
+        width: 80,
+        height: 80,
+        marginBottom: 4,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        width: '100%',
+        marginBottom: 20,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#ffffff',
+        width: '100%',
+    },
+    button: {
+        marginTop: 8,
+        backgroundColor: '#26B1A5',
+        borderRadius: 8,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+    },
+    buttonText: {
+        color: '#ffffff',
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    buttonSecondary: {
+        borderWidth: 1,
+        borderColor: '#26B1A5',
+        borderRadius: 8,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+    },
+    buttonSecondaryText: {
+        color: '#26B1A5',
+        fontWeight: '600',
+        fontSize: 16,
+    },
+});

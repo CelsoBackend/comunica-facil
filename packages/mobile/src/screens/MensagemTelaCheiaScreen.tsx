@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Speech from 'expo-speech';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../../App';
+import MensagemTelaCheiaView from "@/screens/views/MensagemTelaCheiaView";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MensagemTelaCheia'>;
 
@@ -76,41 +76,11 @@ export default function MensagemTelaCheiaScreen({ navigation, route }: Props) {
   }, [atencao, navigation, texto]);
 
   return (
-    <Pressable
-      style={[styles.container, { backgroundColor: cor }]}
+    <MensagemTelaCheiaView
+      cor={cor}
+      corTexto={corTexto}
+      texto={texto}
       onPress={() => navigation.goBack()}
-      accessibilityRole="button"
-      accessibilityLabel="Mensagem em tela cheia. Toque para voltar"
-    >
-      <View style={styles.content}>
-        <Text style={[styles.texto, { color: corTexto }]}>{texto}</Text>
-        <Text style={[styles.ajudaRetorno, { color: corTexto }]}>Toque em qualquer lugar para voltar</Text>
-      </View>
-    </Pressable>
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  texto: {
-    fontSize: 64,
-    lineHeight: 72,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  ajudaRetorno: {
-    marginTop: 24,
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-});

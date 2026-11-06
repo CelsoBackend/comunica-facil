@@ -1,15 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  TextInput,
-  Pressable,
-  Alert,
-  ScrollView,
-  Image,
-} from 'react-native';
+import { Alert } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
@@ -42,6 +32,7 @@ import {
   validaCriarCuidador,
   buscarSessaoAtiva,
 } from '@/domain/services';
+import HomeView from "@/screens/views/HomeView";
 
 type ModoTela = 'loading' | 'cadastroPaciente' | 'home';
 
@@ -53,45 +44,6 @@ const CONFIGURACAO_ACESSO_ID = 'principal';
 const SESSAO_ID = 'principal';
 const SENHA_MINIMA_CARACTERES = 6;
 const COR_PADRAO = COR_PADRAO_BOTAO;
-
-const CORES_PRESET = [
-  { nome: 'Verde claro', valor: '#86EFAC' },
-  { nome: 'Vermelho claro', valor: '#FCA5A5' },
-  { nome: 'Azul', valor: '#60A5FA' },
-  { nome: 'Laranja', valor: '#FB923C' },
-  { nome: 'Marrom', valor: '#92400E' },
-  { nome: 'Vermelho', valor: '#EF4444' },
-  { nome: 'Roxo', valor: '#A78BFA' },
-  { nome: 'Rosa', valor: '#F9A8D4' },
-  { nome: 'Violeta', valor: '#8B5CF6' },
-  { nome: 'Azul claro', valor: '#7DD3FC' },
-  { nome: 'Amarelo claro', valor: '#FDE68A' },
-] as const;
-
-
-const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  const sanitized = hex.trim().replace('#', '');
-  if (!/^[0-9a-fA-F]{6}$/.test(sanitized)) {
-    return null;
-  }
-
-  const value = Number.parseInt(sanitized, 16);
-  return {
-    r: (value >> 16) & 255,
-    g: (value >> 8) & 255,
-    b: value & 255,
-  };
-};
-
-const getCorTextoPorContraste = (hexColor: string): string => {
-  const rgb = hexToRgb(hexColor);
-  if (!rgb) {
-    return '#111827';
-  }
-
-  const luminancia = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  return luminancia > 0.6 ? '#111827' : '#ffffff';
-};
 
 const getMensagemErro = getMensagemErroService;
 const criarId = criarIdService;
@@ -479,504 +431,52 @@ export default function HomeScreen() {
     [botoes, carregarBotoesAtivos, voltarParaHomeSegura],
   );
 
-  const renderColorPalette = useCallback(
-    (corSelecionada: string, selecionarCor: (cor: string) => void) => (
-      <View style={styles.paletteGrid}>
-        {CORES_PRESET.map((cor) => {
-          const selecionada = corSelecionada === cor.valor;
-          const corTexto = getCorTextoPorContraste(cor.valor);
-
-          return (
-            <Pressable
-              key={cor.valor}
-              style={[styles.colorItem, selecionada && styles.colorItemSelected]}
-              onPress={() => selecionarCor(cor.valor)}
-              accessibilityRole="button"
-              accessibilityLabel={`Selecionar cor ${cor.nome}`}
-            >
-              <View style={[styles.colorSwatch, { backgroundColor: cor.valor }]} />
-              <Text style={[styles.colorName, { color: corTexto === '#ffffff' ? '#111827' : '#111827' }]}>{cor.nome}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    ),
-    [],
-  );
-
-  const renderCadastroPaciente = () => (
-    <View style={styles.card}>
-      <Text style={styles.subtitle}>Cadastro inicial do paciente</Text>
-      <TextInput
-        placeholder="Nome do paciente"
-        value={pacienteNome}
-        onChangeText={setPacienteNome}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Senha"
-        secureTextEntry
-        value={pacienteSenha}
-        onChangeText={setPacienteSenha}
-        style={styles.input}
-      />
-      <Pressable style={styles.button} onPress={salvarPaciente} disabled={saving}>
-        <Text style={styles.buttonText}>{saving ? 'Salvando...' : 'Criar conta e acessar Home'}</Text>
-      </Pressable>
-    </View>
-  );
-
-  const renderHome = () => (
-    <View style={styles.card}>
-      {modoEdicaoAtivo ? (
-        <Pressable style={styles.closeEditButton} onPress={sairModoEdicao} disabled={saving}>
-          <Text style={styles.closeEditButtonText}>✕</Text>
-        </Pressable>
-      ) : null}
-
-      <Image source={require('../../assets/icon.png')} style={styles.icon} resizeMode="contain" />
-      <Text style={styles.subtitle}>Olá, {pacienteAtualNome}</Text>
-      <Text style={styles.status}>{modoEdicaoAtivo ? 'Modo edição ativo' : 'Modo paciente ativo'}</Text>
-
-      <Text style={styles.gridTitle}>Comunicação rápida</Text>
-      {botoes.length === 0 ? (
-        <Text style={styles.emptyState}>Nenhum botão cadastrado ainda.</Text>
-      ) : (
-        <View style={styles.grid}>
-          {botoes.map((botao) => {
-            const corTexto = getCorTextoPorContraste(botao.cor);
-            const botaoDominio = new Botao(botao.id, botao.texto, botao.cor);
-            return (
-              <Pressable
-                key={botao.id}
-                style={[styles.botaoComunicacao, { backgroundColor: botao.cor }]}
-                accessibilityRole="button"
-                accessibilityLabel={`Botão de comunicação: ${botao.texto}`}
-                hitSlop={8}
-                onPress={() => {
-                  const payload = botaoDominio.pressionar();
-                  navigation.navigate('MensagemTelaCheia', payload);
-                }}
-              >
-                <Text style={[styles.botaoComunicacaoTexto, { color: corTexto }]}>{botao.texto}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-
-      {hasCuidador ? (
-        <>
-          <Text style={styles.info}>Cuidador já cadastrado no aparelho.</Text>
-
-          {!modoEdicaoAtivo ? (
-            <Pressable style={styles.buttonSecondary} onPress={() => navigation.navigate('LoginCuidadorEdicao')}>
-              <Text style={styles.buttonSecondaryText}>Entrar em modo edição</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.formSection}>
-              <Text style={styles.formTitle}>Painel do cuidador</Text>
-              <Text style={styles.emptyState}>Gerencie os botões do paciente: criar, editar, excluir e reordenar.</Text>
-
-              <View style={styles.painelEditor}>
-                <Text style={styles.formTitle}>Criar novo botão</Text>
-                <TextInput
-                  placeholder="Texto do botão"
-                  value={novoBotaoTexto}
-                  onChangeText={setNovoBotaoTexto}
-                  style={styles.input}
-                />
-                <Text style={styles.colorTitle}>Cor do botão</Text>
-                {renderColorPalette(novoBotaoCor, setNovoBotaoCor)}
-                <Pressable style={styles.button} onPress={criarBotao} disabled={saving}>
-                  <Text style={styles.buttonText}>{saving ? 'Salvando...' : 'Criar botão'}</Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.painelEditor}>
-                <Text style={styles.formTitle}>Lista de botões</Text>
-                {botoes.length === 0 ? (
-                  <Text style={styles.emptyState}>Nenhum botão cadastrado.</Text>
-                ) : (
-                  botoes.map((botao, index) => {
-                    const emEdicao = botaoEmEdicaoId === botao.id;
-
-                    return (
-                      <View key={botao.id} style={styles.itemGestao}>
-                        <View style={styles.itemGestaoHeader}>
-                          <Text style={styles.itemGestaoTitulo}>#{botao.ordem} {botao.texto}</Text>
-                          <View style={[styles.corPreview, { backgroundColor: botao.cor }]} />
-                        </View>
-
-                        {emEdicao ? (
-                          <>
-                            <TextInput
-                              placeholder="Texto do botão"
-                              value={edicaoTexto}
-                              onChangeText={setEdicaoTexto}
-                              style={styles.input}
-                            />
-                            <Text style={styles.colorTitle}>Cor do botão</Text>
-                            {renderColorPalette(edicaoCor, setEdicaoCor)}
-                            <View style={styles.linhaAcoes}>
-                              <Pressable style={styles.buttonSmall} onPress={salvarEdicao} disabled={saving}>
-                                <Text style={styles.buttonText}>Salvar</Text>
-                              </Pressable>
-                              <Pressable
-                                style={styles.buttonSmallSecondary}
-                                onPress={() => setBotaoEmEdicaoId(null)}
-                                disabled={saving}
-                              >
-                                <Text style={styles.buttonSecondaryText}>Cancelar</Text>
-                              </Pressable>
-                            </View>
-                          </>
-                        ) : (
-                          <View style={styles.linhaAcoes}>
-                            <Pressable
-                              style={styles.buttonSmallSecondary}
-                              onPress={() => moverBotao(botao.id, 'up')}
-                              disabled={saving || index === 0}
-                            >
-                              <Text style={styles.buttonSecondaryText}>↑</Text>
-                            </Pressable>
-                            <Pressable
-                              style={styles.buttonSmallSecondary}
-                              onPress={() => moverBotao(botao.id, 'down')}
-                              disabled={saving || index === botoes.length - 1}
-                            >
-                              <Text style={styles.buttonSecondaryText}>↓</Text>
-                            </Pressable>
-                            <Pressable
-                              style={styles.buttonSmallSecondary}
-                              onPress={() => iniciarEdicao(botao)}
-                              disabled={saving}
-                            >
-                              <Text style={styles.buttonSecondaryText}>Editar</Text>
-                            </Pressable>
-                            <Pressable
-                              style={styles.buttonSmallDanger}
-                              onPress={() => excluirBotao(botao.id)}
-                              disabled={saving}
-                            >
-                              <Text style={styles.buttonText}>Excluir</Text>
-                            </Pressable>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })
-                )}
-              </View>
-
-            </View>
-          )}
-        </>
-      ) : (
-        <>
-          {!mostrarCadastroCuidador ? (
-            <Pressable style={styles.buttonSecondary} onPress={() => setMostrarCadastroCuidador(true)}>
-              <Text style={styles.buttonSecondaryText}>Criar Conta Cuidador</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.formSection}>
-              <Text style={styles.formTitle}>Cadastro de Cuidador</Text>
-              <TextInput
-                placeholder="Nome do cuidador"
-                value={cuidadorNome}
-                onChangeText={setCuidadorNome}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Email do cuidador"
-                value={cuidadorEmail}
-                onChangeText={setCuidadorEmail}
-                style={styles.input}
-                autoCapitalize="none"
-              />
-              <TextInput
-                placeholder="Senha"
-                secureTextEntry
-                value={cuidadorSenha}
-                onChangeText={setCuidadorSenha}
-                style={styles.input}
-              />
-              <Pressable style={styles.button} onPress={salvarCuidador} disabled={saving}>
-                <Text style={styles.buttonText}>{saving ? 'Salvando...' : 'Salvar cuidador'}</Text>
-              </Pressable>
-              <Pressable style={styles.linkButton} onPress={() => setMostrarCadastroCuidador(false)}>
-                <Text style={styles.linkText}>Cancelar</Text>
-              </Pressable>
-            </View>
-          )}
-        </>
-      )}
-    </View>
-  );
-
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      {loading ? (
-        <ActivityIndicator size="large" color="#0066cc" />
-      ) : modoTela === 'cadastroPaciente' ? (
-        renderCadastroPaciente()
-      ) : (
-        renderHome()
-      )}
-    </ScrollView>
+    <HomeView
+      loading={loading}
+      saving={saving}
+      modoTela={modoTela}
+      pacienteAtualNome={pacienteAtualNome}
+      modoEdicaoAtivo={modoEdicaoAtivo}
+      hasCuidador={hasCuidador}
+      mostrarCadastroCuidador={mostrarCadastroCuidador}
+      botoes={botoes}
+      botaoEmEdicaoId={botaoEmEdicaoId}
+      pacienteNome={pacienteNome}
+      pacienteSenha={pacienteSenha}
+      cuidadorNome={cuidadorNome}
+      cuidadorEmail={cuidadorEmail}
+      cuidadorSenha={cuidadorSenha}
+      novoBotaoTexto={novoBotaoTexto}
+      novoBotaoCor={novoBotaoCor}
+      edicaoTexto={edicaoTexto}
+      edicaoCor={edicaoCor}
+      onChangePacienteNome={setPacienteNome}
+      onChangePacienteSenha={setPacienteSenha}
+      onChangeCuidadorNome={setCuidadorNome}
+      onChangeCuidadorEmail={setCuidadorEmail}
+      onChangeCuidadorSenha={setCuidadorSenha}
+      onChangeNovoBotaoTexto={setNovoBotaoTexto}
+      onChangeNovoBotaoCor={setNovoBotaoCor}
+      onChangeEdicaoTexto={setEdicaoTexto}
+      onChangeEdicaoCor={setEdicaoCor}
+      onSalvarPaciente={salvarPaciente}
+      onSalvarCuidador={salvarCuidador}
+      onSairModoEdicao={sairModoEdicao}
+      onCriarBotao={criarBotao}
+      onSalvarEdicao={salvarEdicao}
+      onCancelarEdicao={() => setBotaoEmEdicaoId(null)}
+      onIniciarEdicao={iniciarEdicao}
+      onExcluirBotao={excluirBotao}
+      onMoverBotao={moverBotao}
+      onPressBotao={(botao) => {
+        const botaoDominio = new Botao(botao.id, botao.texto, botao.cor);
+        const payload = botaoDominio.pressionar();
+        navigation.navigate('MensagemTelaCheia', payload);
+      }}
+      onMostrarCadastroCuidador={() => setMostrarCadastroCuidador(true)}
+      onCancelarCadastroCuidador={() => setMostrarCadastroCuidador(false)}
+      onEntrarModoEdicao={() => navigation.navigate('LoginCuidadorEdicao')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#f5f5f5',
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#26B1A5',
-  },
-  status: {
-    fontSize: 17,
-    color: '#111827',
-    marginBottom: 12,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-  },
-  icon: {
-    width: 64,
-    height: 64,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#1f2937',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 10,
-    fontSize: 17,
-  },
-  button: {
-    backgroundColor: '#26B1A5',
-    borderRadius: 8,
-    minHeight: 48,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonSecondary: {
-    borderWidth: 1,
-    borderColor: '#26B1A5',
-    borderRadius: 8,
-    minHeight: 48,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  buttonSecondaryText: {
-    color: '#26B1A5',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  info: {
-    marginTop: 14,
-    color: '#065f46',
-    fontWeight: '500',
-  },
-  formSection: {
-    marginTop: 14,
-    position: 'relative',
-  },
-  painelEditor: {
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    padding: 10,
-  },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#111827',
-  },
-  itemGestao: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-  },
-  itemGestaoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  itemGestaoTitulo: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-    marginRight: 8,
-  },
-  corPreview: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  colorTitle: {
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  paletteGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
-  },
-  colorItem: {
-    width: '48%',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#ffffff',
-  },
-  colorItemSelected: {
-    borderColor: '#26B1A5',
-    borderWidth: 2,
-  },
-  colorSwatch: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#9ca3af',
-  },
-  colorName: {
-    flex: 1,
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-  },
-  closeEditButton: {
-    position: 'absolute',
-    right: 0,
-    top: -4,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#fee2e2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  closeEditButtonText: {
-    fontSize: 22,
-    color: '#991b1b',
-    fontWeight: '700',
-    lineHeight: 24,
-  },
-  linhaAcoes: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  buttonSmall: {
-    backgroundColor: '#26B1A5',
-    borderRadius: 8,
-    minHeight: 44,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonSmallSecondary: {
-    borderWidth: 1,
-    borderColor: '#26B1A5',
-    borderRadius: 8,
-    minHeight: 44,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonSmallDanger: {
-    backgroundColor: '#dc2626',
-    borderRadius: 8,
-    minHeight: 44,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  linkButton: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#374151',
-    textDecorationLine: 'underline',
-  },
-  gridTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#111827',
-  },
-  emptyState: {
-    color: '#6b7280',
-    marginBottom: 12,
-    fontSize: 16,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 10,
-  },
-  botaoComunicacao: {
-    minHeight: 108,
-    width: '47%',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  botaoComunicacaoTexto: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-});
