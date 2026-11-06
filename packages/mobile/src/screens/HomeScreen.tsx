@@ -12,15 +12,15 @@ import {
 } from '@/data/repositories';
 import { runMigrations } from '@/data/storage';
 import { Botao } from '@/domain/models';
-import { isEmailValido } from '@/domain/security/utils/email';
-import { hashSenha } from '@/domain/security/utils/hash';
 import {
   getMensagemErro as getMensagemErroService,
   criarId as criarIdService,
   COR_PADRAO_BOTAO,
   BotaoService,
+  CuidadorService, SENHA_MINIMA_CARACTERES,
 } from '@/domain/services';
 import HomeView from "@/screens/views/HomeView";
+import {hashSenha} from "@/domain/security/utils/hash";
 
 type ModoTela = 'loading' | 'cadastroPaciente' | 'home';
 
@@ -29,13 +29,13 @@ const configuracaoAcessoRepository = new ConfiguracaoAcessoRepository();
 const sessaoRepository = new SessaoRepository();
 const CONFIGURACAO_ACESSO_ID = 'principal';
 const SESSAO_ID = 'principal';
-const SENHA_MINIMA_CARACTERES = 6;
 const COR_PADRAO = COR_PADRAO_BOTAO;
 
 const getMensagemErro = getMensagemErroService;
 const criarId = criarIdService;
 
 const botaoService = new BotaoService();
+const cuidadorService = new CuidadorService();
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -78,7 +78,7 @@ export default function HomeScreen() {
       await runMigrations();
       const paciente = await usuarioRepository.findByTipo('paciente');
       const cuidador = paciente
-        ? await usuarioRepository.findByTipoAndPacienteId('cuidador', paciente.id)
+        ? await cuidadorService.buscarCuidadorDoPaciente(paciente.id)
         : null;
       const configuracaoAcesso = await configuracaoAcessoRepository.findById(CONFIGURACAO_ACESSO_ID);
 
@@ -162,49 +162,24 @@ export default function HomeScreen() {
       return;
     }
 
-    if (hasCuidador) {
-      Alert.alert('Limite atingido', 'No MVP, é permitido cadastrar apenas 1 cuidador.');
-      setMostrarCadastroCuidador(false);
-      return;
-    }
-
     const nome = cuidadorNome.trim();
     const email = cuidadorEmail.trim();
     const senha = cuidadorSenha.trim();
 
-    if (!nome || !email || !senha) {
-      Alert.alert('Atenção', 'Preencha nome, email e senha para criar o cuidador.');
-      return;
-    }
-
-    if (!isEmailValido(email)) {
-      Alert.alert('Email inválido', 'Informe um email válido para o cuidador.');
-      return;
-    }
-
-    const usuarioExistente = await usuarioRepository.findByEmail(email);
-    if (usuarioExistente) {
-      Alert.alert('Conta existente', 'Já existe uma conta cadastrada com este email.');
-      return;
-    }
-
-    if (senha.length < SENHA_MINIMA_CARACTERES) {
-      Alert.alert('Senha inválida', `A senha deve ter pelo menos ${SENHA_MINIMA_CARACTERES} caracteres.`);
+    const validacao = cuidadorService.validarCuidador(nome, email, senha, hasCuidador);
+    if (!validacao.valido) {
+      Alert.alert(validacao.titulo, validacao.mensagem);
       return;
     }
 
     setSaving(true);
 
     try {
-      await usuarioRepository.create({
-        id: criarId(),
-        nome,
-        email,
-        pacienteId: pacienteAtualId,
-        senhaHash: hashSenha(senha),
-        tipo: 'cuidador',
-        criadoEm: new Date().toISOString(),
-      });
+      const resultado = await cuidadorService.criarCuidador(nome, email, senha, pacienteAtualId);
+      if (!resultado.sucesso) {
+        Alert.alert(resultado.titulo ?? 'Erro', resultado.mensagem ?? '');
+        return;
+      }
       setCuidadorNome('');
       setCuidadorEmail('');
       setCuidadorSenha('');
