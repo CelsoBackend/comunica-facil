@@ -82,7 +82,19 @@ Obs: o Celular precisa estar na mesma rede Wifi do computador.
 | `yarn start` | Start Expo dev server |
 | `yarn test` | Run tests in all packages |
 
-## Publicação na Google Play (Android)
+## Download e Instalação do APK (.apk)
+
+Você pode baixar e instalar o aplicativo diretamente no seu celular Android sem precisar compilar o código.
+
+- 📥 **Download direto**: [Última Release no GitHub](https://github.com/CelsoBackend/comunica-facil/releases/latest)
+
+### Passo a Passo de Instalação no Celular
+1. Baixe o arquivo `comunica-facil.apk` acessando a [Release no GitHub](https://github.com/CelsoBackend/comunica-facil/releases/latest) pelo navegador do celular.
+2. Abra o arquivo baixado. Se solicitado, permita a instalação a partir do navegador/gerenciador de arquivos (*Fontes Desconhecidas*).
+3. Caso apareça o aviso do **Google Play Protect**, clique em **"Mais detalhes"** e depois em **"Instalar assim mesmo"**.
+4. Conclua a instalação e abra o app.
+
+## Publicação e Builds (Android)
 
 ### Assets já preparados no repositório
 
@@ -93,21 +105,16 @@ Obs: o Celular precisa estar na mesma rede Wifi do computador.
   - foreground: `packages/mobile/assets/adaptive-icon-foreground.png`
   - background: `packages/mobile/assets/adaptive-icon-background.png`
 
-### Gerar AAB de produção (EAS)
+### Gerar APK ou AAB (EAS Build)
 
 No diretório `packages/mobile`:
 
-```bash
-npx eas build --platform android --profile production
-```
+- **Gerar `.apk` (para GitHub Releases e instalação direta)**:
+  ```bash
+  npx eas build --platform android --profile preview
+  ```
 
 Após gerar o build:
 
 1. Instalar o artefato em dispositivo/emulador Android.
 2. Validar fluxo básico do app (abrir, navegar e acionar um botão de comunicação).
-
-### Materiais de suporte para Play Console
-
-- Política de privacidade: `docs/google-play/POLITICA_DE_PRIVACIDADE.md`
-- Data safety: `docs/google-play/PLAY_CONSOLE_DATA_SAFETY.md`
-- Store listing base: `docs/google-play/STORE_LISTING_BASE.md`
