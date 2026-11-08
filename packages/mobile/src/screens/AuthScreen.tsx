@@ -3,8 +3,11 @@ import { Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../App';
-import { autenticarUsuario, getMensagemErro, salvarSessaoAtiva, validaLogin } from '@/domain/services';
+import { getMensagemErro, UsuarioService, SessaoService } from '@/domain/services';
 import AuthView from "@/screens/views/AuthView";
+
+const usuarioService = new UsuarioService();
+const sessaoService = new SessaoService();
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
@@ -17,7 +20,7 @@ export default function AuthScreen({ navigation }: Props) {
     const emailNormalizado = email.trim();
     const senhaNormalizada = senha.trim();
 
-    const validacao = validaLogin(emailNormalizado, senhaNormalizada);
+    const validacao = usuarioService.validarLogin(emailNormalizado, senhaNormalizada);
     if (!validacao.valido) {
       Alert.alert(validacao.titulo, validacao.mensagem);
       return;
@@ -26,14 +29,14 @@ export default function AuthScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const resultado = await autenticarUsuario(emailNormalizado, senhaNormalizada);
+      const resultado = await usuarioService.autenticarUsuario(emailNormalizado, senhaNormalizada);
 
       if (!resultado.sucesso) {
         Alert.alert(resultado.titulo, resultado.mensagem);
         return;
       }
 
-      await salvarSessaoAtiva(resultado.usuario.nome);
+      await sessaoService.salvarSessaoAtiva(resultado.usuario.nome);
       setSenha('');
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch (erro) {

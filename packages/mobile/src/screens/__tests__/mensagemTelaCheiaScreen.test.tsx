@@ -27,15 +27,19 @@ describe('Fluxo assistivo - MensagemTelaCheia', () => {
     const goBack = jest.fn();
 
     const screen = render(
-      <mensagemTelaCheiaScreen
-        navigation={{ goBack } as any}
-        route={{ key: 'MensagemTelaCheia-1', name: 'MensagemTelaCheia', params: { texto: 'SIM', cor: '#22c55e' } } as any}
+      <MensagemTelaCheiaScreen
+        navigation={{ goBack, navigate: jest.fn() } as any}
+        route={{
+          key: 'MensagemTelaCheia-1',
+          name: 'MensagemTelaCheia',
+          params: { atencao: 'Atenção', texto: 'SIM', cor: '#22c55e' },
+        } as any}
       />,
     );
 
     await waitFor(() => {
       expect(mockSpeak).toHaveBeenCalledWith(
-        'SIM',
+        'Atenção',
         expect.objectContaining({ language: 'pt-BR', rate: 0.95, pitch: 1 }),
       );
     });
@@ -44,20 +48,25 @@ describe('Fluxo assistivo - MensagemTelaCheia', () => {
     expect(goBack).toHaveBeenCalledTimes(1);
   });
 
-  it('deve exibir alerta quando TTS lança erro', async () => {
+  it('deve navegar para Home quando TTS lança erro', async () => {
+    const navigate = jest.fn();
     mockSpeak.mockImplementation(() => {
       throw new Error('TTS indisponível');
     });
 
     render(
-      <mensagemTelaCheiaScreen
-        navigation={{ goBack: jest.fn() } as any}
-        route={{ key: 'MensagemTelaCheia-1', name: 'MensagemTelaCheia', params: { texto: 'NÃO', cor: '#ef4444' } } as any}
+      <MensagemTelaCheiaScreen
+        navigation={{ goBack: jest.fn(), navigate } as any}
+        route={{
+          key: 'MensagemTelaCheia-1',
+          name: 'MensagemTelaCheia',
+          params: { atencao: 'Atenção', texto: 'NÃO', cor: '#ef4444' },
+        } as any}
       />,
     );
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Áudio indisponível', 'Não foi possível reproduzir a fala neste momento.');
+      expect(navigate).toHaveBeenCalledWith('Home');
     });
   });
 });

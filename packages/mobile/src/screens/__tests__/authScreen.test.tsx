@@ -4,31 +4,26 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import AuthScreen from '../AuthScreen';
 
-const mockFindByEmail = jest.fn();
-const mockFindSessao = jest.fn();
-const mockSaveSessao = jest.fn();
-const mockRunMigrations = jest.fn();
+const mockValidarLogin = jest.fn();
+const mockAutenticarUsuario = jest.fn();
+const mockSalvarSessaoAtiva = jest.fn();
 
-jest.mock('@/data/repositories', () => ({
-  UsuarioRepository: jest.fn().mockImplementation(() => ({
-    findByEmail: (...args: unknown[]) => mockFindByEmail(...args),
+jest.mock('@/domain/services', () => ({
+  getMensagemErro: (erro: unknown) => (erro instanceof Error ? erro.message : 'Tente novamente em instantes.'),
+  UsuarioService: jest.fn().mockImplementation(() => ({
+    validarLogin: (...args: unknown[]) => mockValidarLogin(...args),
+    autenticarUsuario: (...args: unknown[]) => mockAutenticarUsuario(...args),
   })),
-  SessaoRepository: jest.fn().mockImplementation(() => ({
-    findById: (...args: unknown[]) => mockFindSessao(...args),
-    save: (...args: unknown[]) => mockSaveSessao(...args),
+  SessaoService: jest.fn().mockImplementation(() => ({
+    salvarSessaoAtiva: (...args: unknown[]) => mockSalvarSessaoAtiva(...args),
   })),
-}));
-
-jest.mock('@/data/storage', () => ({
-  runMigrations: (...args: unknown[]) => mockRunMigrations(...args),
 }));
 
 describe('AuthScreen', () => {
   beforeEach(() => {
-    mockFindByEmail.mockReset();
-    mockFindSessao.mockReset();
-    mockSaveSessao.mockReset();
-    mockRunMigrations.mockReset();
+    mockValidarLogin.mockReset();
+    mockAutenticarUsuario.mockReset();
+    mockSalvarSessaoAtiva.mockReset();
     jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
   });
 
@@ -38,34 +33,40 @@ describe('AuthScreen', () => {
 
   it('deve autenticar com credenciais válidas e navegar para Home', async () => {
     const reset = jest.fn();
-    mockFindByEmail.mockResolvedValueOnce({
-      nome: 'Cuidador',
-      email: 'cuidador@email.com',
-      senhaHash: 'f0f0c0da8f7e22f8f87fba0f20f12c72794f9fbeed2f72e3fe7fb8672ff63f91',
-    });
-    mockFindSessao.mockResolvedValueOnce(null);
+    mockValidarLogin.mockReturnValueOnce({ valido: true });
+    mockAutenticarUsuario.mockResolvedValueOnce({ sucesso: true, usuario: { nome: 'Paciente' } });
+    mockSalvarSessaoAtiva.mockResolvedValueOnce(undefined);
 
-    const screen = render(<AuthScreen navigation={{ reset } as any} route={{ key: 'Auth-1', name: 'Auth' } as any} />);
+    const screen = render(
+      <AuthScreen navigation={{ reset } as any} route={{ key: 'Auth-1', name: 'Auth' } as any} />,
+    );
 
-    fireEvent.changeText(screen.getByPlaceholderText('email'), 'cuidador@email.com');
+    fireEvent.changeText(screen.getByPlaceholderText('email'), 'paciente@email.com');
     fireEvent.changeText(screen.getByPlaceholderText('senha'), '123456');
-    fireEvent.press(screen.getByText('Login'));
+    fireEvent.press(screen.getAllByText('Login')[1]);
 
     await waitFor(() => {
-      expect(mockSaveSessao).toHaveBeenCalledTimes(1);
+      expect(mockSalvarSessaoAtiva).toHaveBeenCalledWith('Paciente');
       expect(reset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'Home' }] });
     });
   });
 
-  it('deve mostrar erro quando login for inválido', async () => {
+  it('deve mostrar erro quando credenciais forem inválidas', async () => {
     const reset = jest.fn();
-    mockFindByEmail.mockResolvedValueOnce(null);
+    mockValidarLogin.mockReturnValueOnce({ valido: true });
+    mockAutenticarUsuario.mockResolvedValueOnce({
+      sucesso: false,
+      titulo: 'Acesso negado',
+      mensagem: 'Credenciais inválidas.',
+    });
 
-    const screen = render(<AuthScreen navigation={{ reset } as any} route={{ key: 'Auth-1', name: 'Auth' } as any} />);
+    const screen = render(
+      <AuthScreen navigation={{ reset } as any} route={{ key: 'Auth-1', name: 'Auth' } as any} />,
+    );
 
     fireEvent.changeText(screen.getByPlaceholderText('email'), 'invalido@email.com');
     fireEvent.changeText(screen.getByPlaceholderText('senha'), '123456');
-    fireEvent.press(screen.getByText('Login'));
+    fireEvent.press(screen.getAllByText('Login')[1]);
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith('Acesso negado', 'Credenciais inválidas.');
@@ -75,23 +76,30 @@ describe('AuthScreen', () => {
 
   it('deve validar formato do email antes de tentar login', async () => {
     const reset = jest.fn();
+    mockValidarLogin.mockReturnValueOnce({
+      valido: false,
+      titulo: 'Email inválido',
+      mensagem: 'Informe um email válido.',
+    });
 
-    const screen = render(<AuthScreen navigation={{ reset } as any} route={{ key: 'Auth-1', name: 'Auth' } as any} />);
+    const screen = render(
+      <AuthScreen navigation={{ reset } as any} route={{ key: 'Auth-1', name: 'Auth' } as any} />,
+    );
 
     fireEvent.changeText(screen.getByPlaceholderText('email'), 'email-invalido');
     fireEvent.changeText(screen.getByPlaceholderText('senha'), '123456');
-    fireEvent.press(screen.getByText('Login'));
+    fireEvent.press(screen.getAllByText('Login')[1]);
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith('Email inválido', 'Informe um email válido.');
-      expect(mockRunMigrations).not.toHaveBeenCalled();
-      expect(mockFindByEmail).not.toHaveBeenCalled();
+      expect(mockAutenticarUsuario).not.toHaveBeenCalled();
       expect(reset).not.toHaveBeenCalled();
     });
   });
 
   it('deve navegar para criar conta e resetar senha', () => {
     const navigate = jest.fn();
+    mockValidarLogin.mockReturnValue({ valido: true });
 
     const screen = render(
       <AuthScreen
@@ -100,10 +108,10 @@ describe('AuthScreen', () => {
       />,
     );
 
-    fireEvent.press(screen.getByText('Criar conta'));
+    fireEvent.press(screen.getByText('Criar Conta'));
     expect(navigate).toHaveBeenCalledWith('CriarConta');
 
-    fireEvent.press(screen.getByText('Resetar senha'));
+    fireEvent.press(screen.getByText('Resetar Senha'));
     expect(navigate).toHaveBeenCalledWith('ResetarSenha');
   });
 });
