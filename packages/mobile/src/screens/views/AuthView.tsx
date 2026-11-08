@@ -20,15 +20,21 @@ export default function AuthView({ email, senha, loading, onChangeEmail, onChang
         <Image source={require('../../../assets/icon.png')} style={stylesAuth.icon} resizeMode="contain" />
         <Text style={stylesAuth.title}>Login</Text>
 
-        <TextInput placeholder="email" value={email} onChangeText={onChangeEmail} style={stylesAuth.input} autoCapitalize="none" />
-        <TextInput
-          placeholder="senha"
-          value={senha}
-          onChangeText={onChangeSenha}
-          style={stylesAuth.input}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+        <View style={stylesAuth.fieldRow}>
+          <Text style={stylesAuth.fieldLabel}>Email:</Text>
+          <TextInput value={email} onChangeText={onChangeEmail} style={stylesAuth.inputFlex} autoCapitalize="none" />
+        </View>
+
+        <View style={stylesAuth.fieldRow}>
+          <Text style={stylesAuth.fieldLabel}>Senha:</Text>
+          <TextInput
+            value={senha}
+            onChangeText={onChangeSenha}
+            style={stylesAuth.inputFlex}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
 
         <Pressable style={stylesAuth.button} onPress={onLogin} disabled={loading}>
           <Text style={stylesAuth.buttonText}>{loading ? 'Carregando...' : 'Login'}</Text>

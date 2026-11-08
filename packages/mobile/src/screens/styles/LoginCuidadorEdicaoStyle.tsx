@@ -25,6 +25,28 @@ export const stylesLoginCuidadorEdicao = StyleSheet.create({
         width: '100%',
         marginBottom: 20,
     },
+    fieldRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        gap: 8,
+    },
+    fieldLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111827',
+        width: 50,
+    },
+    inputFlex: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#ffffff',
+        color: '#111827',
+    },
     input: {
         borderWidth: 1,
         borderColor: '#d1d5db',
@@ -32,6 +54,7 @@ export const stylesLoginCuidadorEdicao = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
         backgroundColor: '#ffffff',
+        color: '#111827',
     },
     button: {
         marginTop: 8,

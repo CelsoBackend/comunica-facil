@@ -18,15 +18,21 @@ export default function ResetarSenhaView({ email, novaSenha, loading, onChangeEm
         <Image source={require('../../../assets/icon.png')} style={stylesResetarSenha.icon} resizeMode="contain" />
         <Text style={stylesResetarSenha.title}>Resetar Senha</Text>
 
-        <TextInput placeholder="email" value={email} onChangeText={onChangeEmail} style={stylesResetarSenha.input} autoCapitalize="none" />
-        <TextInput
-          placeholder="nova senha"
-          value={novaSenha}
-          onChangeText={onChangeNovaSenha}
-          style={stylesResetarSenha.input}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+        <View style={stylesResetarSenha.fieldRow}>
+          <Text style={stylesResetarSenha.fieldLabel}>Email:</Text>
+          <TextInput value={email} onChangeText={onChangeEmail} style={stylesResetarSenha.inputFlex} autoCapitalize="none" />
+        </View>
+
+        <View style={stylesResetarSenha.fieldRow}>
+          <Text style={stylesResetarSenha.fieldLabel}>Nova Senha:</Text>
+          <TextInput
+            value={novaSenha}
+            onChangeText={onChangeNovaSenha}
+            style={stylesResetarSenha.inputFlex}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
 
         <Pressable style={stylesResetarSenha.button} onPress={onResetarSenha} disabled={loading}>
           <Text style={stylesResetarSenha.buttonText}>{loading ? 'Carregando...' : 'Resetar Senha'}</Text>

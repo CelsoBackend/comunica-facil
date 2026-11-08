@@ -42,6 +42,30 @@ export const stylesHome = StyleSheet.create({
         marginBottom: 20,
         color: '#1f2937',
     },
+    fieldRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        gap: 8,
+        marginBottom: 10,
+    },
+    fieldLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111827',
+        width: 70,
+    },
+    inputFlex: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#ffffff',
+        color: '#111827',
+        fontSize: 17,
+    },
     input: {
         borderWidth: 1,
         borderColor: '#d1d5db',
@@ -50,6 +74,7 @@ export const stylesHome = StyleSheet.create({
         paddingVertical: 12,
         marginBottom: 10,
         fontSize: 17,
+        color: '#111827',
     },
     button: {
         backgroundColor: '#26B1A5',
@@ -181,10 +206,9 @@ export const stylesHome = StyleSheet.create({
         zIndex: 10,
     },
     closeEditButtonText: {
-        fontSize: 22,
-        color: '#991b1b',
-        fontWeight: '700',
-        lineHeight: 24,
+        color: '#dc2626',
+        fontSize: 16,
+        fontWeight: '600',
     },
     linhaAcoes: {
         flexDirection: 'row',

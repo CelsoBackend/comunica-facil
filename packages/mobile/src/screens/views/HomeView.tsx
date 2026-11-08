@@ -157,19 +157,14 @@ export default function HomeView({
   const renderCadastroPaciente = () => (
     <View style={stylesHome.card}>
       <Text style={stylesHome.subtitle}>Cadastro inicial do paciente</Text>
-      <TextInput
-        placeholder="Nome do paciente"
-        value={pacienteNome}
-        onChangeText={onChangePacienteNome}
-        style={stylesHome.input}
-      />
-      <TextInput
-        placeholder="Senha"
-        secureTextEntry
-        value={pacienteSenha}
-        onChangeText={onChangePacienteSenha}
-        style={stylesHome.input}
-      />
+      <View style={stylesHome.fieldRow}>
+        <Text style={stylesHome.fieldLabel}>Nome:</Text>
+        <TextInput value={pacienteNome} onChangeText={onChangePacienteNome} style={stylesHome.inputFlex} />
+      </View>
+      <View style={stylesHome.fieldRow}>
+        <Text style={stylesHome.fieldLabel}>Senha:</Text>
+        <TextInput secureTextEntry value={pacienteSenha} onChangeText={onChangePacienteSenha} style={stylesHome.inputFlex} />
+      </View>
       <Pressable style={stylesHome.button} onPress={onSalvarPaciente} disabled={saving}>
         <Text style={stylesHome.buttonText}>{saving ? 'Salvando...' : 'Criar conta e acessar Home'}</Text>
       </Pressable>
@@ -178,14 +173,9 @@ export default function HomeView({
 
   const renderHome = () => (
     <View style={stylesHome.card}>
-      {modoEdicaoAtivo ? (
-        <Pressable style={stylesHome.closeEditButton} onPress={onSairModoEdicao} disabled={saving}>
-          <Text style={stylesHome.closeEditButtonText}>✕</Text>
-        </Pressable>
-      ) : null}
 
       <Image source={require('../../../assets/icon.png')} style={stylesHome.icon} resizeMode="contain" />
-      <Text style={stylesHome.subtitle}>Olá, {pacienteAtualNome}</Text>
+      <Text style={stylesHome.subtitle}>Olá, {modoEdicaoAtivo ? 'Cuidador' : pacienteAtualNome}</Text>
       <Text style={stylesHome.status}>{modoEdicaoAtivo ? 'Modo edição ativo' : 'Modo paciente ativo'}</Text>
 
       <Text style={stylesHome.gridTitle}>Comunicação Rápida</Text>
@@ -221,17 +211,18 @@ export default function HomeView({
             </Pressable>
           ) : (
             <View style={stylesHome.formSection}>
+              <Pressable style={stylesHome.buttonSecondary} onPress={onSairModoEdicao} disabled={saving}>
+                <Text style={stylesHome.closeEditButtonText}>Sair modo edição</Text>
+              </Pressable>
               <Text style={stylesHome.formTitle}>Painel do cuidador</Text>
               <Text style={stylesHome.emptyState}>Gerencie os botões do paciente: criar, editar, excluir e reordenar.</Text>
 
               <View style={stylesHome.painelEditor}>
                 <Text style={stylesHome.formTitle}>Criar novo botão</Text>
-                <TextInput
-                  placeholder="Texto do botão"
-                  value={novoBotaoTexto}
-                  onChangeText={onChangeNovoBotaoTexto}
-                  style={stylesHome.input}
-                />
+                <View style={stylesHome.fieldRow}>
+                  <Text style={stylesHome.fieldLabel}>Texto:</Text>
+                  <TextInput value={novoBotaoTexto} onChangeText={onChangeNovoBotaoTexto} style={stylesHome.inputFlex} />
+                </View>
                 <Text style={stylesHome.colorTitle}>Cor do botão</Text>
                 {renderColorPalette(novoBotaoCor, onChangeNovoBotaoCor)}
                 <Pressable style={stylesHome.button} onPress={onCriarBotao} disabled={saving}>
@@ -256,12 +247,10 @@ export default function HomeView({
 
                         {emEdicao ? (
                           <>
-                            <TextInput
-                              placeholder="Texto do botão"
-                              value={edicaoTexto}
-                              onChangeText={onChangeEdicaoTexto}
-                              style={stylesHome.input}
-                            />
+                            <View style={stylesHome.fieldRow}>
+                              <Text style={stylesHome.fieldLabel}>Texto:</Text>
+                              <TextInput value={edicaoTexto} onChangeText={onChangeEdicaoTexto} style={stylesHome.inputFlex} />
+                            </View>
                             <Text style={stylesHome.colorTitle}>Cor do botão</Text>
                             {renderColorPalette(edicaoCor, onChangeEdicaoCor)}
                             <View style={stylesHome.linhaAcoes}>
@@ -326,26 +315,18 @@ export default function HomeView({
           ) : (
             <View style={stylesHome.formSection}>
               <Text style={stylesHome.formTitle}>Cadastro de Cuidador</Text>
-              <TextInput
-                placeholder="Nome do cuidador"
-                value={cuidadorNome}
-                onChangeText={onChangeCuidadorNome}
-                style={stylesHome.input}
-              />
-              <TextInput
-                placeholder="Email do cuidador"
-                value={cuidadorEmail}
-                onChangeText={onChangeCuidadorEmail}
-                style={stylesHome.input}
-                autoCapitalize="none"
-              />
-              <TextInput
-                placeholder="Senha"
-                secureTextEntry
-                value={cuidadorSenha}
-                onChangeText={onChangeCuidadorSenha}
-                style={stylesHome.input}
-              />
+              <View style={stylesHome.fieldRow}>
+                <Text style={stylesHome.fieldLabel}>Nome:</Text>
+                <TextInput value={cuidadorNome} onChangeText={onChangeCuidadorNome} style={stylesHome.inputFlex} />
+              </View>
+              <View style={stylesHome.fieldRow}>
+                <Text style={stylesHome.fieldLabel}>Email:</Text>
+                <TextInput value={cuidadorEmail} onChangeText={onChangeCuidadorEmail} style={stylesHome.inputFlex} autoCapitalize="none" />
+              </View>
+              <View style={stylesHome.fieldRow}>
+                <Text style={stylesHome.fieldLabel}>Senha:</Text>
+                <TextInput secureTextEntry value={cuidadorSenha} onChangeText={onChangeCuidadorSenha} style={stylesHome.inputFlex} />
+              </View>
               <Pressable style={stylesHome.button} onPress={onSalvarCuidador} disabled={saving}>
                 <Text style={stylesHome.buttonText}>{saving ? 'Salvando...' : 'Salvar cuidador'}</Text>
               </Pressable>

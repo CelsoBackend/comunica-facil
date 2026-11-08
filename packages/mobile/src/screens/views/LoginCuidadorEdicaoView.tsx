@@ -18,15 +18,21 @@ export default function LoginCuidadorEdicaoView({ email, senha, loading, onChang
       <View style={stylesLoginCuidadorEdicao.card}>
         <Text style={stylesLoginCuidadorEdicao.title}>Login Cuidador</Text>
 
-        <TextInput placeholder="email" value={email} onChangeText={onChangeEmail} style={stylesLoginCuidadorEdicao.input} autoCapitalize="none" />
-        <TextInput
-          placeholder="senha"
-          value={senha}
-          onChangeText={onChangeSenha}
-          style={stylesLoginCuidadorEdicao.input}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+        <View style={stylesLoginCuidadorEdicao.fieldRow}>
+          <Text style={stylesLoginCuidadorEdicao.fieldLabel}>Email:</Text>
+          <TextInput value={email} onChangeText={onChangeEmail} style={stylesLoginCuidadorEdicao.inputFlex} autoCapitalize="none" />
+        </View>
+
+        <View style={stylesLoginCuidadorEdicao.fieldRow}>
+          <Text style={stylesLoginCuidadorEdicao.fieldLabel}>Senha:</Text>
+          <TextInput
+            value={senha}
+            onChangeText={onChangeSenha}
+            style={stylesLoginCuidadorEdicao.inputFlex}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
 
         <Pressable style={stylesLoginCuidadorEdicao.button} onPress={onAutenticar} disabled={loading}>
           <Text style={stylesLoginCuidadorEdicao.buttonText}>{loading ? 'Carregando...' : 'Entrar no modo edição'}</Text>
