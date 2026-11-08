@@ -1,4 +1,3 @@
-import { Botao } from './botao';
 import { Usuario } from './usuario';
 
 export class Paciente extends Usuario {
@@ -6,12 +5,7 @@ export class Paciente extends Usuario {
     id: string,
     nome: string,
     senhaHash: string,
-    private botoes: Botao[] = [],
   ) {
     super(id, nome, senhaHash, 'paciente');
-  }
-
-  obterBotoes(): Botao[] {
-    return this.botoes;
   }
 }

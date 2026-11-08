@@ -4,8 +4,6 @@ import { hashSenha } from '@/domain/security/utils/hash';
 import { criarId } from './utils';
 import { ResultadoOperacao, SENHA_MINIMA_CARACTERES } from './usuarioService';
 
-const usuarioRepository = new UsuarioRepository();
-
 export type ResultadoValidacaoPaciente =
   | { valido: true }
   | { valido: false; titulo: string; mensagem: string };
@@ -32,7 +30,7 @@ export class PacienteService {
   public async criarPaciente(nome: string, senha: string): Promise<ResultadoOperacao> {
     await runMigrations();
 
-    await usuarioRepository.create({
+    await this.usuarioRepository.create({
       id: criarId(),
       nome,
       senhaHash: hashSenha(senha),

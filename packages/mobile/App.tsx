@@ -67,15 +67,15 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName={rotaInicial}>
-          <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'login' }} />
-          <Stack.Screen name="CriarConta" component={CriarContaScreen} options={{ title: 'criar conta' }} />
+          <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Login' }} />
+          <Stack.Screen name="CriarConta" component={CriarContaScreen} options={{ title: 'Criar Conta' }} />
           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Comunica Fácil' }} />
           <Stack.Screen
             name="LoginCuidadorEdicao"
             component={LoginCuidadorEdicaoScreen}
             options={{ title: 'login cuidador' }}
           />
-          <Stack.Screen name="ResetarSenha" component={ResetarSenhaScreen} options={{ title: 'resetar senha' }} />
+          <Stack.Screen name="ResetarSenha" component={ResetarSenhaScreen} options={{ title: 'Resetar Senha' }} />
           <Stack.Screen
             name="MensagemTelaCheia"
             component={MensagemTelaCheiaScreen}

@@ -21,16 +21,18 @@ const createMemDb = (): MemDb => {
 
   const runAsync = jest.fn(async (query: string, ...args: unknown[]) => {
     if (query.includes('INSERT INTO Usuario')) {
-      const [id, nome, senha_hash, tipo, criado_em] = args as [string, string, string, string, string];
-      usuarios.push({ id, nome, senha_hash, tipo, criado_em });
+      const [id, nome, email, paciente_id, senha_hash, tipo, criado_em] = args as [string, string, string | null, string | null, string, string, string];
+      usuarios.push({ id, nome, email, paciente_id, senha_hash, tipo, criado_em });
       return;
     }
 
     if (query.includes('UPDATE Usuario')) {
-      const [nome, senha_hash, tipo, id] = args as [string, string, string, string];
+      const [nome, email, paciente_id, senha_hash, tipo, id] = args as [string, string | null, string | null, string, string, string];
       const usuario = usuarios.find((item) => item.id === id);
       if (usuario) {
         usuario.nome = nome;
+        usuario.email = email;
+        usuario.paciente_id = paciente_id;
         usuario.senha_hash = senha_hash;
         usuario.tipo = tipo;
       }
@@ -101,10 +103,21 @@ const createMemDb = (): MemDb => {
       return usuarios.find((item) => item.id === id) ?? null;
     }
 
+    if (query.includes('SELECT * FROM Usuario WHERE tipo = ? AND paciente_id = ?')) {
+      const [tipo, paciente_id] = args as [string, string];
+      const items = usuarios.filter((item) => item.tipo === tipo && item.paciente_id === paciente_id).sort((a, b) => a.criado_em.localeCompare(b.criado_em));
+      return items[0] ?? null;
+    }
+
     if (query.includes('SELECT * FROM Usuario WHERE tipo = ?')) {
       const [tipo] = args as [string];
       const items = usuarios.filter((item) => item.tipo === tipo).sort((a, b) => a.criado_em.localeCompare(b.criado_em));
       return items[0] ?? null;
+    }
+
+    if (query.includes('SELECT * FROM Usuario WHERE email = ?')) {
+      const [email] = args as [string];
+      return usuarios.find((item) => item.email === email || item.nome === email) ?? null;
     }
 
     if (query.includes('SELECT COUNT(*) AS total FROM Usuario WHERE tipo = ?')) {
