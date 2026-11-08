@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -30,6 +30,21 @@ export default function LoginCuidadorEdicaoScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        await runMigrations();
+        const sessao = await sessaoRepository.findById(SESSAO_ID);
+        if (!sessao?.usuarioNome) return;
+        const paciente = await usuarioRepository.findByNome(sessao.usuarioNome);
+        if (!paciente) return;
+        const cuidador = await usuarioRepository.findByTipoAndPacienteId('cuidador', paciente.id);
+        if (cuidador?.email) setEmail(cuidador.email);
+      } catch {
+        // silencioso
+      }
+    })();
+  }, []);
 
   const autenticarCuidador = useCallback(async () => {
     const emailNormalizado = email.trim();

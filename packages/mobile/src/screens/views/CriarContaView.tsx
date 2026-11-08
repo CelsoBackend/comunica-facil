@@ -20,16 +20,26 @@ export default function CriarContaView({ nome, email, senha, loading, onChangeNo
         <Image source={require('../../../assets/icon.png')} style={stylesCriarConta.icon} resizeMode="contain" />
         <Text style={stylesCriarConta.title}>Criar Conta</Text>
 
-        <TextInput placeholder="nome" value={nome} onChangeText={onChangeNome} style={stylesCriarConta.input} autoCapitalize="words" />
-        <TextInput placeholder="email" value={email} onChangeText={onChangeEmail} style={stylesCriarConta.input} autoCapitalize="none" />
-        <TextInput
-          placeholder="senha"
-          value={senha}
-          onChangeText={onChangeSenha}
-          style={stylesCriarConta.input}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+        <View style={stylesCriarConta.fieldRow}>
+          <Text style={stylesCriarConta.fieldLabel}>Nome:</Text>
+          <TextInput value={nome} onChangeText={onChangeNome} style={stylesCriarConta.inputFlex} autoCapitalize="words" />
+        </View>
+
+        <View style={stylesCriarConta.fieldRow}>
+          <Text style={stylesCriarConta.fieldLabel}>Email:</Text>
+          <TextInput value={email} onChangeText={onChangeEmail} style={stylesCriarConta.inputFlex} autoCapitalize="none" />
+        </View>
+
+        <View style={stylesCriarConta.fieldRow}>
+          <Text style={stylesCriarConta.fieldLabel}>Senha:</Text>
+          <TextInput
+            value={senha}
+            onChangeText={onChangeSenha}
+            style={stylesCriarConta.inputFlex}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
 
         <Pressable style={stylesCriarConta.button} onPress={onCriarConta} disabled={loading}>
           <Text style={stylesCriarConta.buttonText}>{loading ? 'Carregando...' : 'Criar Conta'}</Text>
